@@ -1,0 +1,51 @@
+<ul id="markdown-toc">
+  <li><a href="#单例的三种简单方式" id="markdown-toc-单例的三种简单方式">单例的三种简单方式</a>    <ul>
+      <li><a href="#方式一" id="markdown-toc-方式一">方式一：</a></li>
+      <li><a href="#方法二" id="markdown-toc-方法二">方法二：</a></li>
+      <li><a href="#方法三" id="markdown-toc-方法三">方法三：</a></li>
+    </ul>
+  </li>
+</ul>
+
+<p>本文中的例子来自Effective Java</p>
+
+<h2 id="单例的三种简单方式">单例的三种简单方式</h2>
+
+<h3 id="方式一">方式一：</h3>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Elvis</span> <span class="o">{</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kd">final</span>  <span class="n">Elvis</span> <span class="n">INSTANCE</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Elvis</span><span class="o">();</span>
+    <span class="kd">private</span> <span class="nf">Elvis</span><span class="o">(){</span>
+        <span class="c1">//</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+
+</code></pre>
+</div>
+
+<h3 id="方法二">方法二：</h3>
+<p>公有的成员是个静态成员方法：</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Elvis</span> <span class="o">{</span>
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="n">Elvis</span> <span class="n">INSTANCE</span> <span class="o">=</span> <span class="k">new</span> <span class="n">Elvis</span><span class="o">();</span>
+
+    <span class="kd">private</span> <span class="nf">Elvis</span><span class="o">()</span> <span class="o">{</span>
+    <span class="o">}</span>
+
+    <span class="kd">public</span> <span class="kd">static</span> <span class="n">Elvis</span> <span class="nf">getInstance</span><span class="o">()</span> <span class="o">{</span>
+        <span class="k">return</span> <span class="n">INSTANCE</span><span class="o">;</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+
+</code></pre>
+</div>
+
+<h3 id="方法三">方法三：</h3>
+<p>绝对防止多次实例化，即使是在面对复杂的序列化或者反射攻击的时候。</p>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">enum</span> <span class="n">Elvis</span> <span class="o">{</span>
+    <span class="n">INSTANCE</span><span class="o">;</span>
+<span class="o">}</span>
+
+</code></pre>
+</div>

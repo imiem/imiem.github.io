@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>MrDebuger</title>
+    <description></description>
+    <link>http://localhost:4000/</link>
+    <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml"/>
+    <pubDate>Sat, 27 May 2017 15:09:06 +0800</pubDate>
+    <lastBuildDate>Sat, 27 May 2017 15:09:06 +0800</lastBuildDate>
+    <generator>Jekyll v3.4.3</generator>
+    
+      <item>
+        <title>GeoHash实现周边推荐</title>
+        <description>
+旅游，外卖等需要定位的项目中一般会有周边推荐的需求，如推荐出周边五公里的景点。目前实现的算法也有很多，这里简单的说下GeoHash的实现原理以及Java的实现代码。
+
+</description>
+        <pubDate>Fri, 31 Mar 2017 21:06:05 +0800</pubDate>
+        <link>http://localhost:4000/2017/03/31/LBS-GeoHash/</link>
+        <guid isPermaLink="true">http://localhost:4000/2017/03/31/LBS-GeoHash/</guid>
+        
+        <category>LBS</category>
+        
+        <category>GeoHash</category>
+        
+        
+        <category>Java</category>
+        
+      </item>
+    
+      <item>
+        <title>springboot redis实现session共享</title>
+        <description>当创建分布式服务时会出现session共享的问题，即第一次访问的时候负载均衡会将请求分配到server1上，但是当第二次访问的时候，如果请求没有分配到server1上，那么用户的会话状态将丢失。下面给出了一种使用springboot整合redis的共享session的例子。
+
+</description>
+        <pubDate>Mon, 06 Mar 2017 02:06:05 +0800</pubDate>
+        <link>http://localhost:4000/2017/03/06/SpringBoot-Redis-Session/</link>
+        <guid isPermaLink="true">http://localhost:4000/2017/03/06/SpringBoot-Redis-Session/</guid>
+        
+        <category>redis</category>
+        
+        <category>tomcat</category>
+        
+        <category>session</category>
+        
+        
+        <category>Java</category>
+        
+      </item>
+    
+      <item>
+        <title>小觑Chrome Extension</title>
+        <description>
+最近一朋友问了一个关于Chrome Extension的问题，因为之前从来没有接触过，然后就自己看着文档动手写了一个简单的示例。Chrome Extension除了官方的一个API接口外，其他的就是一些html，css，js的知识了，如果很熟悉这些，写一个简单的自己的插件还是可以的。这里只是做了一个最简单的功能，毕竟我的前端功底不是太好，如果想有更加深入的了解，强烈建议读下&lt;a href=&quot;https://developer.chrome.com/extensions/getstarted&quot;&gt;Chrome的官方文档&lt;/a&gt;。
+
+</description>
+        <pubDate>Wed, 06 Jul 2016 22:06:05 +0800</pubDate>
+        <link>http://localhost:4000/2016/07/06/Chrome-Extension/</link>
+        <guid isPermaLink="true">http://localhost:4000/2016/07/06/Chrome-Extension/</guid>
+        
+        <category>Chrome</category>
+        
+        <category>Extension</category>
+        
+        
+        <category>前端</category>
+        
+      </item>
+    
+      <item>
+        <title>Java Tips</title>
+        <description>&lt;blockquote&gt;
+  纸上得来终觉浅，绝知此事要躬行。
+&lt;/blockquote&gt;
+
+</description>
+        <pubDate>Sat, 18 Jun 2016 18:06:05 +0800</pubDate>
+        <link>http://localhost:4000/2016/06/18/Java-Userful-Word/</link>
+        <guid isPermaLink="true">http://localhost:4000/2016/06/18/Java-Userful-Word/</guid>
+        
+        <category>Tips</category>
+        
+        
+        <category>架构</category>
+        
+      </item>
+    
+      <item>
+        <title>final关键字</title>
+        <description>
+&lt;blockquote&gt;
+  根据上下文，final的含义有细微的差别，但通常它指的是&lt;strong&gt;“这是无法改变的”&lt;/strong&gt;。不想做出改变可能出于两种理由：&lt;strong&gt;设计和效率&lt;/strong&gt;。 final一般用于三种情况：变量、方法和类。
+&lt;/blockquote&gt;
+
+</description>
+        <pubDate>Mon, 06 Jun 2016 22:06:05 +0800</pubDate>
+        <link>http://localhost:4000/2016/06/06/Java-Final/</link>
+        <guid isPermaLink="true">http://localhost:4000/2016/06/06/Java-Final/</guid>
+        
+        <category>Java</category>
+        
+        <category>final</category>
+        
+        <category>关键字</category>
+        
+        
+        <category>Java</category>
+        
+      </item>
+    
+      <item>
+        <title>Java 中的 enum</title>
+        <description>
+枚举可以理解为有&lt;strong&gt;相似类型&lt;/strong&gt;的“数据集”,并且&lt;strong&gt;数值稳定&lt;/strong&gt;，&lt;strong&gt;数据集有限&lt;/strong&gt;。
+
+</description>
+        <pubDate>Fri, 20 May 2016 22:06:05 +0800</pubDate>
+        <link>http://localhost:4000/2016/05/20/Java-enum/</link>
+        <guid isPermaLink="true">http://localhost:4000/2016/05/20/Java-enum/</guid>
+        
+        <category>Java</category>
+        
+        <category>enum</category>
+        
+        
+        <category>Java</category>
+        
+      </item>
+    
+      <item>
+        <title>Java的垃圾回收机制</title>
+        <description>
+&lt;blockquote&gt;
+  垃圾回收机制（GC）。在以前所用过的程序语言中，在堆上分配对象的代价十分高昂，因此会认为Java中所有对象（基本类型除外）都在堆上分配的方式也十分高昂。然而，&lt;strong&gt;垃圾回收器对于提高对象的创建速度，却有明显的效果&lt;/strong&gt;。听起来很奇怪–存储空间的释放竟然影响存储空间的分配，但这确实是某些Java虚拟机的工作方式。这也意味着，Java从堆分配空间的速度，可以和其他语言从堆栈上分配空间的速度相媲美。–from Thinking in Java(Java编程思想)
+&lt;/blockquote&gt;
+
+</description>
+        <pubDate>Fri, 20 May 2016 18:06:05 +0800</pubDate>
+        <link>http://localhost:4000/2016/05/20/Java-Garbage-Collection/</link>
+        <guid isPermaLink="true">http://localhost:4000/2016/05/20/Java-Garbage-Collection/</guid>
+        
+        <category>Java</category>
+        
+        <category>垃圾回收机制</category>
+        
+        <category>GC</category>
+        
+        
+        <category>Java</category>
+        
+      </item>
+    
+      <item>
+        <title>Java 中的 单例</title>
+        <description>
+本文中的例子来自Effective Java
+
+</description>
+        <pubDate>Sun, 03 Apr 2016 22:06:05 +0800</pubDate>
+        <link>http://localhost:4000/2016/04/03/Java-Singleton/</link>
+        <guid isPermaLink="true">http://localhost:4000/2016/04/03/Java-Singleton/</guid>
+        
+        <category>Java</category>
+        
+        <category>Singleton</category>
+        
+        
+        <category>Java</category>
+        
+      </item>
+    
+  </channel>
+</rss>

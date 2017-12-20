@@ -1,0 +1,518 @@
+<ul id="markdown-toc">
+  <li><a href="#geohash基础" id="markdown-toc-geohash基础">GeoHash基础</a></li>
+  <li><a href="#geohash转换过程" id="markdown-toc-geohash转换过程">GeoHash转换过程</a>    <ul>
+      <li><a href="#转换" id="markdown-toc-转换">转换</a></li>
+      <li><a href="#合并" id="markdown-toc-合并">合并</a></li>
+    </ul>
+  </li>
+  <li><a href="#误差" id="markdown-toc-误差">误差</a></li>
+  <li><a href="#java实现代码" id="markdown-toc-java实现代码">Java实现代码</a></li>
+  <li><a href="#参考内容" id="markdown-toc-参考内容">参考内容</a></li>
+</ul>
+
+<p>旅游，外卖等需要定位的项目中一般会有周边推荐的需求，如推荐出周边五公里的景点。目前实现的算法也有很多，这里简单的说下GeoHash的实现原理以及Java的实现代码。</p>
+
+<h2 id="geohash基础">GeoHash基础</h2>
+
+<ul>
+  <li>GeoHash使用一个字符串来表示经度和纬度。这样在做周边搜索的时候可以在一列上加索引。</li>
+  <li>GeoHash表示的不是一个点，而是一个矩形区域。</li>
+  <li>精度范围为(-180,180),纬度范围为(-90,90)</li>
+</ul>
+
+<h2 id="geohash转换过程">GeoHash转换过程</h2>
+
+<h3 id="转换">转换</h3>
+
+<p>GeoHash就是将经纬度信息，转换为可以排序、比较的字符串编码。
+首先将纬度范围(-90,90)分为两个区间(-90,0),(0,90),如果目标纬度在前一个区间，编码为0，否则编码为1。以此类推，直到精度符合要求为止。</p>
+
+<p>给出一个经纬度(39.92324,116.3906)，转换过程如下</p>
+
+<table boder="1px" cellspacing="0px" style="width:100%">
+	<tr>
+		<td>纬度范围</td>
+		<td>划分区间0</td>
+		<td>划分区间1</td>
+		<td>39.92324所属区间</td>
+	</tr>
+	<tr>
+		<td>(-90, 90)</td>
+		<td>(-90, 0.0)</td>
+		<td>(0.0, 90)</td>
+		<td>1</td>
+	</tr>
+	<tr>
+		<td>(0.0, 90)</td>
+		<td>(0.0, 45.0)</td>
+		<td>(45.0, 90)</td>
+		<td>0</td>
+	</tr>
+	<tr>
+		<td>(0.0, 45.0)</td>
+		<td>(0.0, 22.5)</td>
+		<td>(22.5, 45.0)</td>
+		<td>1</td>
+	</tr>
+	<tr>
+		<td>(22.5, 45.0)</td>
+		<td>(22.5, 33.75)</td>
+		<td>(33.75, 45.0)</td>
+		<td>1</td>
+	</tr>
+	<tr>
+		<td>(33.75, 45.0)</td>
+		<td>(33.75, 39.375)</td>
+		<td>(39.375, 45.0)</td>
+		<td>1</td>
+	</tr>
+	<tr>
+		<td>(39.375, 45.0)</td>
+		<td>(39.375, 42.1875)</td>
+		<td>(42.1875, 45.0)</td>
+		<td>0</td>
+	</tr>
+	<tr>
+		<td>(39.375, 42.1875)</td>
+		<td>(39.375, 40.7812)</td>
+		<td>(40.7812, 42.1875)</td>
+		<td>0</td>
+	</tr>
+	<tr>
+		<td>(39.375, 40.7812)</td>
+		<td>(39.375, 40.0781)</td>
+		<td>(40.0781, 40.7812)</td>
+		<td>0</td>
+	</tr>
+	<tr>
+		<td>(39.375, 40.0781)</td>
+		<td>(39.375, 39.7265)</td>
+		<td>(39.7265, 40.0781)</td>
+		<td>1</td>
+	</tr>
+	<tr>
+		<td>(39.7265, 40.0781)</td>
+		<td>(39.7265, 39.9023)</td>
+		<td>(39.9023, 40.0781)</td>
+		<td>1</td>
+	</tr>
+	<tr>
+		<td>(39.9023, 40.0781)</td>
+		<td>(39.9023, 39.9902)</td>
+		<td>(39.9902, 40.0781)</td>
+		<td>0</td>
+	</tr>
+	<tr>
+		<td>(39.9023, 39.9902)</td>
+		<td>(39.9023, 39.9462)</td>
+		<td>(39.9462, 39.9902)</td>
+		<td>0</td>
+	</tr>
+	<tr>
+		<td>(39.9023, 39.9462)</td>
+		<td>(39.9023, 39.9243)</td>
+		<td>(39.9243, 39.9462)</td>
+		<td>0</td>
+	</tr>
+	<tr>
+		<td>(39.9023, 39.9243)</td>
+		<td>(39.9023, 39.9133)</td>
+		<td>(39.9133, 39.9243)</td>
+		<td>1</td>
+	</tr>
+	<tr>
+		<td>(39.9133, 39.9243)</td>
+		<td>(39.9133, 39.9188)</td>
+		<td>(39.9188, 39.9243)</td>
+		<td>1</td>
+	</tr>
+	<tr>
+		<td>(39.9188, 39.9243)</td>
+		<td>(39.9188, 39.9215)</td>
+		<td>(39.9215, 39.9243)</td>
+		<td>1</td>
+	</tr>
+	<tr>
+		<td>(39.9215, 39.9243)</td>
+		<td>(39.9215, 39.9229)</td>
+		<td>(39.9229, 39.9243)</td>
+		<td>1</td>
+	</tr>
+	<tr>
+		<td>(39.9229, 39.9243)</td>
+		<td>(39.9229, 39.9236)</td>
+		<td>(39.9236, 39.9243)</td>
+		<td>0</td>
+	</tr>
+	<tr>
+		<td>(39.9229, 39.9236)</td>
+		<td>(39.9229, 39.92325)</td>
+		<td>(39.92325, 39.9236)</td>
+		<td>0</td>
+	</tr>
+	<tr>
+		<td>(39.9229, 39.92325)</td>
+		<td>(39.9229, 39.923075)</td>
+		<td>(39.923075, 39.92325)</td>
+		<td>1</td>
+	</tr>
+</table>
+
+<p>因此可以得到纬度的编码为 1011 1000 1100 0111 1001
+经度也用同样的算法，对(-180, 180)依次细分，得到116.3906的编码为1101 0010 1100 0100 0100。
+接下来将经度和纬度的编码合并，奇数位是纬度，偶数位是经度，得到编码 11100 11101 00100 01111 00000 01101 01011 00001。</p>
+
+<h3 id="合并">合并</h3>
+
+<p>将 11100 11101 00100 01111 00000 01101 01011 00001转化为对应的十进制为 28 29 4 15 0 13 11 1</p>
+
+<p>用0-9、b-z（去掉a, i, l, o）这32个字母进行base32编码</p>
+<table boder="1px" cellspacing="0px" style="width:100%">
+	
+	<tr>
+		<td>十进制</td>
+		<td>0</td>
+		<td>1</td>
+		<td>2</td>
+		<td>3</td>
+		<td>4</td>
+		<td>5</td>
+		<td>6</td>
+		<td>7</td>
+		<td>8</td>
+		<td>9</td>
+		<td>10</td>
+		<td>11</td>
+		<td>12</td>
+		<td>13</td>
+		<td>14</td>
+		<td>15</td>
+	</tr>
+	<tr>
+		<td>base32</td>
+		<td>0</td>
+		<td>1</td>
+		<td>2</td>
+		<td>3</td>
+		<td>4</td>
+		<td>5</td>
+		<td>6</td>
+		<td>7</td>
+		<td>8</td>
+		<td>9</td>
+		<td>b</td>
+		<td>c</td>
+		<td>d</td>
+		<td>e</td>
+		<td>f</td>
+		<td>g</td>
+	</tr>
+	<tr>
+		<td>十进制</td>
+		<td>16</td>
+		<td>17</td>
+		<td>18</td>
+		<td>19</td>
+		<td>20</td>
+		<td>21</td>
+		<td>22</td>
+		<td>23</td>
+		<td>24</td>
+		<td>25</td>
+		<td>26</td>
+		<td>27</td>
+		<td>28</td>
+		<td>29</td>
+		<td>30</td>
+		<td>31</td>
+	</tr>
+	<tr>
+		<td>base32</td>
+		<td>h</td>
+		<td>j</td>
+		<td>k</td>
+		<td>m</td>
+		<td>n</td>
+		<td>p</td>
+		<td>q</td>
+		<td>r</td>
+		<td>s</td>
+		<td>t</td>
+		<td>u</td>
+		<td>v</td>
+		<td>w</td>
+		<td>x</td>
+		<td>y</td>
+		<td>z</td>
+	</tr>
+</table>
+
+<p>可以得到(39.92324, 116.3906)的编码为wx4g0ec1</p>
+
+<h2 id="误差">误差</h2>
+
+<p>下表列出了不同的编码长度对应的精度：</p>
+<table boder="1px" cellspacing="0px" style="width:100%">
+	<tr>
+		<td>geohash length</td>
+		<td>lat bits</td>
+		<td>lng bits</td>
+		<td>lat error</td>
+		<td>lng error</td>
+		<td>km error</td>
+	</tr>
+	<tr>
+		<td>1</td>
+		<td>2</td>
+		<td>3</td>
+		<td>±23</td>
+		<td>±23</td>
+		<td>±2500</td>
+	</tr>
+	<tr>
+		<td>2</td>
+		<td>5</td>
+		<td>5</td>
+		<td>±2.8</td>
+		<td>±5.6</td>
+		<td>±630</td>
+	</tr>
+	<tr>
+		<td>3</td>
+		<td>7</td>
+		<td>8</td>
+		<td>±0.70</td>
+		<td>±0.7</td>
+		<td>±78</td>
+	</tr>
+	<tr>
+		<td>4</td>
+		<td>10</td>
+		<td>10</td>
+		<td>±0.087</td>
+		<td>±0.18</td>
+		<td>±20</td>
+	</tr>
+	<tr>
+		<td>5</td>
+		<td>12</td>
+		<td>13</td>
+		<td>±0.022</td>
+		<td>±0.022</td>
+		<td>±2.4</td>
+	</tr>
+	<tr>
+		<td>6</td>
+		<td>15</td>
+		<td>15</td>
+		<td>±0.0027</td>
+		<td>±0.0055</td>
+		<td>±0.61</td>
+	</tr>
+	<tr>
+		<td>7</td>
+		<td>17</td>
+		<td>18</td>
+		<td>±0.00068</td>
+		<td>±0.0068</td>
+		<td>±0.076</td>
+	</tr>
+	<tr>
+		<td>8</td>
+		<td>20</td>
+		<td>20</td>
+		<td>±0.000085</td>
+		<td>±0.00017</td>
+		<td>±0.019</td>
+	</tr>
+</table>
+
+<table boder="1px" cellspacing="0px" style="width:100%">
+	<tr>
+		<td>geohash length</td>
+		<td>width</td>
+		<td>height</td>
+	</tr>
+	<tr>
+		<td>1</td>
+		<td>5009.4km</td>
+		<td>4992.6km</td>
+	</tr>
+	<tr>
+		<td>2</td>
+		<td>1252.3km</td>
+		<td>624.1km</td>
+	</tr>
+	<tr>
+		<td>3</td>
+		<td>156.5km</td>
+		<td>156km</td>
+	</tr>
+	<tr>
+		<td>4</td>
+		<td>39.1km</td>
+		<td>19.5km</td>
+	</tr>
+	<tr>
+		<td>5</td>
+		<td>4.9km</td>
+		<td>4.9km</td>
+	</tr>
+	<tr>
+		<td>6</td>
+		<td>1.2km</td>
+		<td>609.4m</td>
+	</tr>
+	<tr>
+		<td>7</td>
+		<td>152.9m</td>
+		<td>152.4m</td>
+	</tr>
+	<tr>
+		<td>8</td>
+		<td>38.2m</td>
+		<td>19m</td>
+	</tr>
+	<tr>
+		<td>9</td>
+		<td>4.8m</td>
+		<td>4.8m</td>
+	</tr>
+	<tr>
+		<td>10</td>
+		<td>1.2m</td>
+		<td>59.5m</td>
+	</tr>
+	<tr>
+		<td>11</td>
+		<td>14.9cm</td>
+		<td>14.9cm</td>
+	</tr>
+	<tr>
+		<td>12</td>
+		<td>3.7cm</td>
+		<td>1.9cm</td>
+	</tr>
+
+</table>
+
+<h2 id="java实现代码">Java实现代码</h2>
+
+<div class="language-java highlighter-rouge"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">java.util.BitSet</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.util.HashMap</span><span class="o">;</span>  
+  
+  
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">GeoHash</span> <span class="o">{</span>  
+  
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kt">int</span> <span class="n">numbits</span> <span class="o">=</span> <span class="mi">6</span> <span class="o">*</span> <span class="mi">5</span><span class="o">;</span>  
+    <span class="kd">final</span> <span class="kd">static</span> <span class="kt">char</span><span class="o">[]</span> <span class="n">digits</span> <span class="o">=</span> <span class="o">{</span> <span class="sc">'0'</span><span class="o">,</span> <span class="sc">'1'</span><span class="o">,</span> <span class="sc">'2'</span><span class="o">,</span> <span class="sc">'3'</span><span class="o">,</span> <span class="sc">'4'</span><span class="o">,</span> <span class="sc">'5'</span><span class="o">,</span> <span class="sc">'6'</span><span class="o">,</span> <span class="sc">'7'</span><span class="o">,</span> <span class="sc">'8'</span><span class="o">,</span>  
+            <span class="sc">'9'</span><span class="o">,</span> <span class="sc">'b'</span><span class="o">,</span> <span class="sc">'c'</span><span class="o">,</span> <span class="sc">'d'</span><span class="o">,</span> <span class="sc">'e'</span><span class="o">,</span> <span class="sc">'f'</span><span class="o">,</span> <span class="sc">'g'</span><span class="o">,</span> <span class="sc">'h'</span><span class="o">,</span> <span class="sc">'j'</span><span class="o">,</span> <span class="sc">'k'</span><span class="o">,</span> <span class="sc">'m'</span><span class="o">,</span> <span class="sc">'n'</span><span class="o">,</span> <span class="sc">'p'</span><span class="o">,</span>  
+            <span class="sc">'q'</span><span class="o">,</span> <span class="sc">'r'</span><span class="o">,</span> <span class="sc">'s'</span><span class="o">,</span> <span class="sc">'t'</span><span class="o">,</span> <span class="sc">'u'</span><span class="o">,</span> <span class="sc">'v'</span><span class="o">,</span> <span class="sc">'w'</span><span class="o">,</span> <span class="sc">'x'</span><span class="o">,</span> <span class="sc">'y'</span><span class="o">,</span> <span class="sc">'z'</span> <span class="o">};</span>  
+      
+    <span class="kd">final</span> <span class="kd">static</span> <span class="n">HashMap</span><span class="o">&lt;</span><span class="n">Character</span><span class="o">,</span> <span class="n">Integer</span><span class="o">&gt;</span> <span class="n">lookup</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashMap</span><span class="o">&lt;</span><span class="n">Character</span><span class="o">,</span> <span class="n">Integer</span><span class="o">&gt;();</span>  
+    <span class="kd">static</span> <span class="o">{</span>  
+        <span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>  
+        <span class="k">for</span> <span class="o">(</span><span class="kt">char</span> <span class="n">c</span> <span class="o">:</span> <span class="n">digits</span><span class="o">)</span>  
+            <span class="n">lookup</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">c</span><span class="o">,</span> <span class="n">i</span><span class="o">++);</span>  
+    <span class="o">}</span>  
+
+    <span class="kd">public</span> <span class="kt">double</span><span class="o">[]</span> <span class="nf">decode</span><span class="o">(</span><span class="n">String</span> <span class="n">geohash</span><span class="o">)</span> <span class="o">{</span>  
+        <span class="n">StringBuilder</span> <span class="n">buffer</span> <span class="o">=</span> <span class="k">new</span> <span class="n">StringBuilder</span><span class="o">();</span>  
+        <span class="k">for</span> <span class="o">(</span><span class="kt">char</span> <span class="n">c</span> <span class="o">:</span> <span class="n">geohash</span><span class="o">.</span><span class="na">toCharArray</span><span class="o">())</span> <span class="o">{</span>  
+  
+            <span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="n">lookup</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">c</span><span class="o">)</span> <span class="o">+</span> <span class="mi">32</span><span class="o">;</span>  
+            <span class="n">buffer</span><span class="o">.</span><span class="na">append</span><span class="o">(</span> <span class="n">Integer</span><span class="o">.</span><span class="na">toString</span><span class="o">(</span><span class="n">i</span><span class="o">,</span> <span class="mi">2</span><span class="o">).</span><span class="na">substring</span><span class="o">(</span><span class="mi">1</span><span class="o">)</span> <span class="o">);</span>  
+        <span class="o">}</span>  
+          
+        <span class="n">BitSet</span> <span class="n">lonset</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BitSet</span><span class="o">();</span>  
+        <span class="n">BitSet</span> <span class="n">latset</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BitSet</span><span class="o">();</span>  
+          
+        <span class="c1">//even bits  </span>
+        <span class="kt">int</span> <span class="n">j</span> <span class="o">=</span><span class="mi">0</span><span class="o">;</span>  
+        <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="o">;</span> <span class="n">i</span><span class="o">&lt;</span> <span class="n">numbits</span><span class="o">*</span><span class="mi">2</span><span class="o">;</span><span class="n">i</span><span class="o">+=</span><span class="mi">2</span><span class="o">)</span> <span class="o">{</span>  
+            <span class="kt">boolean</span> <span class="n">isSet</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>  
+            <span class="k">if</span> <span class="o">(</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">buffer</span><span class="o">.</span><span class="na">length</span><span class="o">()</span> <span class="o">)</span>  
+              <span class="n">isSet</span> <span class="o">=</span> <span class="n">buffer</span><span class="o">.</span><span class="na">charAt</span><span class="o">(</span><span class="n">i</span><span class="o">)</span> <span class="o">==</span> <span class="sc">'1'</span><span class="o">;</span>  
+            <span class="n">lonset</span><span class="o">.</span><span class="na">set</span><span class="o">(</span><span class="n">j</span><span class="o">++,</span> <span class="n">isSet</span><span class="o">);</span>  
+        <span class="o">}</span>  
+          
+        <span class="c1">//odd bits  </span>
+        <span class="n">j</span><span class="o">=</span><span class="mi">0</span><span class="o">;</span>  
+        <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span><span class="o">=</span><span class="mi">1</span><span class="o">;</span> <span class="n">i</span><span class="o">&lt;</span> <span class="n">numbits</span><span class="o">*</span><span class="mi">2</span><span class="o">;</span><span class="n">i</span><span class="o">+=</span><span class="mi">2</span><span class="o">)</span> <span class="o">{</span>  
+            <span class="kt">boolean</span> <span class="n">isSet</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>  
+            <span class="k">if</span> <span class="o">(</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">buffer</span><span class="o">.</span><span class="na">length</span><span class="o">()</span> <span class="o">)</span>  
+              <span class="n">isSet</span> <span class="o">=</span> <span class="n">buffer</span><span class="o">.</span><span class="na">charAt</span><span class="o">(</span><span class="n">i</span><span class="o">)</span> <span class="o">==</span> <span class="sc">'1'</span><span class="o">;</span>  
+            <span class="n">latset</span><span class="o">.</span><span class="na">set</span><span class="o">(</span><span class="n">j</span><span class="o">++,</span> <span class="n">isSet</span><span class="o">);</span>  
+        <span class="o">}</span>  
+          
+        <span class="kt">double</span> <span class="n">lon</span> <span class="o">=</span> <span class="n">decode</span><span class="o">(</span><span class="n">lonset</span><span class="o">,</span> <span class="o">-</span><span class="mi">180</span><span class="o">,</span> <span class="mi">180</span><span class="o">);</span>  
+        <span class="kt">double</span> <span class="n">lat</span> <span class="o">=</span> <span class="n">decode</span><span class="o">(</span><span class="n">latset</span><span class="o">,</span> <span class="o">-</span><span class="mi">90</span><span class="o">,</span> <span class="mi">90</span><span class="o">);</span>  
+          
+        <span class="k">return</span> <span class="k">new</span> <span class="kt">double</span><span class="o">[]</span> <span class="o">{</span><span class="n">lat</span><span class="o">,</span> <span class="n">lon</span><span class="o">};</span>       
+    <span class="o">}</span>  
+      
+    <span class="kd">private</span> <span class="kt">double</span> <span class="nf">decode</span><span class="o">(</span><span class="n">BitSet</span> <span class="n">bs</span><span class="o">,</span> <span class="kt">double</span> <span class="n">floor</span><span class="o">,</span> <span class="kt">double</span> <span class="n">ceiling</span><span class="o">)</span> <span class="o">{</span>  
+        <span class="kt">double</span> <span class="n">mid</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>  
+        <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="o">;</span> <span class="n">i</span><span class="o">&lt;</span><span class="n">bs</span><span class="o">.</span><span class="na">length</span><span class="o">();</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>  
+            <span class="n">mid</span> <span class="o">=</span> <span class="o">(</span><span class="n">floor</span> <span class="o">+</span> <span class="n">ceiling</span><span class="o">)</span> <span class="o">/</span> <span class="mi">2</span><span class="o">;</span>  
+            <span class="k">if</span> <span class="o">(</span><span class="n">bs</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">i</span><span class="o">))</span>  
+                <span class="n">floor</span> <span class="o">=</span> <span class="n">mid</span><span class="o">;</span>  
+            <span class="k">else</span>  
+                <span class="n">ceiling</span> <span class="o">=</span> <span class="n">mid</span><span class="o">;</span>  
+        <span class="o">}</span>  
+        <span class="k">return</span> <span class="n">mid</span><span class="o">;</span>  
+    <span class="o">}</span>  
+      
+      
+    <span class="kd">public</span> <span class="n">String</span> <span class="nf">encode</span><span class="o">(</span><span class="kt">double</span> <span class="n">lat</span><span class="o">,</span> <span class="kt">double</span> <span class="n">lon</span><span class="o">)</span> <span class="o">{</span>  
+        <span class="n">BitSet</span> <span class="n">latbits</span> <span class="o">=</span> <span class="n">getBits</span><span class="o">(</span><span class="n">lat</span><span class="o">,</span> <span class="o">-</span><span class="mi">90</span><span class="o">,</span> <span class="mi">90</span><span class="o">);</span>  
+        <span class="n">BitSet</span> <span class="n">lonbits</span> <span class="o">=</span> <span class="n">getBits</span><span class="o">(</span><span class="n">lon</span><span class="o">,</span> <span class="o">-</span><span class="mi">180</span><span class="o">,</span> <span class="mi">180</span><span class="o">);</span>  
+        <span class="n">StringBuilder</span> <span class="n">buffer</span> <span class="o">=</span> <span class="k">new</span> <span class="n">StringBuilder</span><span class="o">();</span>  
+        <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">numbits</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>  
+            <span class="n">buffer</span><span class="o">.</span><span class="na">append</span><span class="o">(</span> <span class="o">(</span><span class="n">lonbits</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">i</span><span class="o">))?</span><span class="sc">'1'</span><span class="o">:</span><span class="sc">'0'</span><span class="o">);</span>  
+            <span class="n">buffer</span><span class="o">.</span><span class="na">append</span><span class="o">(</span> <span class="o">(</span><span class="n">latbits</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">i</span><span class="o">))?</span><span class="sc">'1'</span><span class="o">:</span><span class="sc">'0'</span><span class="o">);</span>  
+        <span class="o">}</span>  
+        <span class="k">return</span> <span class="nf">base32</span><span class="o">(</span><span class="n">Long</span><span class="o">.</span><span class="na">parseLong</span><span class="o">(</span><span class="n">buffer</span><span class="o">.</span><span class="na">toString</span><span class="o">(),</span> <span class="mi">2</span><span class="o">));</span>  
+    <span class="o">}</span>  
+  
+    <span class="kd">private</span> <span class="n">BitSet</span> <span class="nf">getBits</span><span class="o">(</span><span class="kt">double</span> <span class="n">lat</span><span class="o">,</span> <span class="kt">double</span> <span class="n">floor</span><span class="o">,</span> <span class="kt">double</span> <span class="n">ceiling</span><span class="o">)</span> <span class="o">{</span>  
+        <span class="n">BitSet</span> <span class="n">buffer</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BitSet</span><span class="o">(</span><span class="n">numbits</span><span class="o">);</span>  
+        <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">numbits</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>  
+            <span class="kt">double</span> <span class="n">mid</span> <span class="o">=</span> <span class="o">(</span><span class="n">floor</span> <span class="o">+</span> <span class="n">ceiling</span><span class="o">)</span> <span class="o">/</span> <span class="mi">2</span><span class="o">;</span>  
+            <span class="k">if</span> <span class="o">(</span><span class="n">lat</span> <span class="o">&gt;=</span> <span class="n">mid</span><span class="o">)</span> <span class="o">{</span>  
+                <span class="n">buffer</span><span class="o">.</span><span class="na">set</span><span class="o">(</span><span class="n">i</span><span class="o">);</span>  
+                <span class="n">floor</span> <span class="o">=</span> <span class="n">mid</span><span class="o">;</span>  
+            <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>  
+                <span class="n">ceiling</span> <span class="o">=</span> <span class="n">mid</span><span class="o">;</span>  
+            <span class="o">}</span>  
+        <span class="o">}</span>  
+        <span class="k">return</span> <span class="n">buffer</span><span class="o">;</span>  
+    <span class="o">}</span>  
+  
+    <span class="kd">public</span> <span class="kd">static</span> <span class="n">String</span> <span class="nf">base32</span><span class="o">(</span><span class="kt">long</span> <span class="n">i</span><span class="o">)</span> <span class="o">{</span>  
+        <span class="kt">char</span><span class="o">[]</span> <span class="n">buf</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">char</span><span class="o">[</span><span class="mi">65</span><span class="o">];</span>  
+        <span class="kt">int</span> <span class="n">charPos</span> <span class="o">=</span> <span class="mi">64</span><span class="o">;</span>  
+        <span class="kt">boolean</span> <span class="n">negative</span> <span class="o">=</span> <span class="o">(</span><span class="n">i</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="o">);</span>  
+        <span class="k">if</span> <span class="o">(!</span><span class="n">negative</span><span class="o">)</span>  
+            <span class="n">i</span> <span class="o">=</span> <span class="o">-</span><span class="n">i</span><span class="o">;</span>  
+        <span class="k">while</span> <span class="o">(</span><span class="n">i</span> <span class="o">&lt;=</span> <span class="o">-</span><span class="mi">32</span><span class="o">)</span> <span class="o">{</span>  
+            <span class="n">buf</span><span class="o">[</span><span class="n">charPos</span><span class="o">--]</span> <span class="o">=</span> <span class="n">digits</span><span class="o">[(</span><span class="kt">int</span><span class="o">)</span> <span class="o">(-(</span><span class="n">i</span> <span class="o">%</span> <span class="mi">32</span><span class="o">))];</span>  
+            <span class="n">i</span> <span class="o">/=</span> <span class="mi">32</span><span class="o">;</span>  
+        <span class="o">}</span>  
+        <span class="n">buf</span><span class="o">[</span><span class="n">charPos</span><span class="o">]</span> <span class="o">=</span> <span class="n">digits</span><span class="o">[(</span><span class="kt">int</span><span class="o">)</span> <span class="o">(-</span><span class="n">i</span><span class="o">)];</span>  
+  
+        <span class="k">if</span> <span class="o">(</span><span class="n">negative</span><span class="o">)</span>  
+            <span class="n">buf</span><span class="o">[--</span><span class="n">charPos</span><span class="o">]</span> <span class="o">=</span> <span class="sc">'-'</span><span class="o">;</span>  
+        <span class="k">return</span> <span class="k">new</span> <span class="nf">String</span><span class="o">(</span><span class="n">buf</span><span class="o">,</span> <span class="n">charPos</span><span class="o">,</span> <span class="o">(</span><span class="mi">65</span> <span class="o">-</span> <span class="n">charPos</span><span class="o">));</span>  
+    <span class="o">}</span>  
+  
+<span class="o">}</span>
+
+</code></pre>
+</div>
+
+<h2 id="参考内容">参考内容</h2>
+<ul>
+  <li><a href="http://www.cnblogs.com/dengxinglin/archive/2012/12/14/2817761.html">http://www.cnblogs.com/dengxinglin/archive/2012/12/14/2817761.html</a></li>
+  <li><a href="http://blog.csdn.net/xiaojimanman/article/details/50358506">http://blog.csdn.net/xiaojimanman/article/details/50358506</a></li>
+</ul>
