@@ -6,7 +6,7 @@
 # 'jekyll serve'. If you change this file, please restart the server process.
 
 # Site settings
-title: MrDebuger
+title: imiem
 brief-intro: God helps those who help themselves.
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "http://MrDebuger.github.io" # the base hostname & protocol for your site
@@ -16,7 +16,7 @@ permalink: /:year/:month/:day/:title/
 # other links
 twitter_username: 
 facebook_username: 王建丰
-github_username:  MrDebuger
+github_username:  imiem
 email: mailjianfeng@163.com
 weibo_username: Ghost_Heaven
 zhihu_username: MrDebuger
