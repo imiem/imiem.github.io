@@ -4,55 +4,127 @@
 # which you are expected to set up once and rarely need to edit after that.
 # For technical reasons, this file is *NOT* reloaded automatically when you use
 # 'jekyll serve'. If you change this file, please restart the server process.
+#
+# ,--------.      ,--.   ,--. ,--.
+# '--.  .--',---.  \  `.'  /,-'  '-.
+#    |  |  | .-. :  .'    \ '-.  .-'
+#    |  |  \   --. /  .'.  \  |  |
+#    `--'   `----''--'   '--' `--'
 
-# Site settings
-title: imiem
-brief-intro: God helps those who help themselves.
-baseurl: "" # the subpath of your site, e.g. /blog
-url: "http://MrDebuger.github.io" # the base hostname & protocol for your site
+text_color_theme: default #eg: default | dark | forest | ocean | chocolate | orange
+## Base settings ##
+# url:  #the base hostname & protocol for your site e.g. https://www.someone.com
+baseurl: /
+title: imiem's blog
+description: > #this means to ignore newlines until "nav_lists:"
+  imiem's blog
 
-permalink: /:year/:month/:day/:title/
+nav_lists:
+  - titles:
+      en: About
+      zh: 关于
+      zh-Hans: 关于
+      zh-Hant: 關於
+    url: /about.html
 
-# other links
-twitter_username: 
-facebook_username: 王建丰
-github_username:  imiem
-email: mailjianfeng@163.com
-weibo_username: Ghost_Heaven
-zhihu_username: MrDebuger
+# paths:
+#   base: /
+#   home: /
+#   all:  /all.html
+#   rss:  /feed.xml
 
-description_footer: 本站见证了我的开发历程！
+## GitHub repository (if the site is hosted by GitHub) ##
+# repository:  #e.g. someone/someone.github.io
+# repository_tree:  #e.g. master
 
-# comments
-# two ways to comment, only choose one, and use your own short name
-# 两种评论插件，选一个就好了，使用自己的 short_name
-duoshuo_shortname: MrDebuger
-disqus_shortname: # 
+## Language & timezone ##
+lang: zh #the language of your site, eg: en(English), zh(简体中文), zh-Hans(简体中文), zh-Hant(繁體中文)
+timezone: Asia/Shanghai #see https://en.wikipedia.org/wiki/List_of_tz_database_time_zones for the available values
 
-# statistic analysis 统计代码
-# 百度统计 id，将统计代码替换为自己的百度统计id，即
-# hm.src = "//hm.baidu.com/hm.js?xxxxxxxxxxxx";
-# xxxxx字符串
-baidu_tongji_id: 56b9e78ea1792123711380efc641b40c
-google_analytics_id: UA-98427332-1 # google 分析追踪id
+## Author & social ##
+author:
+  name: imiem
+  # email:  #your Email address e.g. someone@site.com
+  # facebook:  #your Facebook username
+  # twitter:  #your Twitter username
+  # github:  #your GitHub username
+  # googleplus:  #your Google+ username
+  # weibo:  #your Weibo username
+  # douban:  #your Douban username
+  # linkedin:  #your Linkedin username
 
-# Build settings
+## TOC
+toc:
+  # selectors: 'h1,h2,h3'
+
+## Comment system (Disqus) ##
+disqus:
+  # shortname:  #the Disqus shortname for the site
+
+## Comment system (gitalk) ##
+# please refer to https://github.com/gitalk/gitalk for more info.
+gitalk:
+  # clientID:  #Github Application Client ID
+  # clientSecret:  #Github Application Client Secret
+  # repository:  #Github repo
+  # owner:  #Github repo owner
+  # admin: #Github repo owner and collaborators, only these guys can initialize github issues, IT IS A LIST.
+    # - owner
+
+## Google Analytics ##
+# ga_tracking_id:  #Google analytics id for the site
+
+## Reading quantity (LeanCloud) ##
+leancloud:
+  # app_id:  #LeanCloud App id
+  # app_key:  #LeanCloud App key
+  # app_class:  #LeanCloud App class
+
+# mathjax: true
+# mathjax_autoNumber: true
+# mermaid: true
+# chart: true
+
+## Paginate ##
+paginate: 7
+paginate_path: /page:num
+
+## Post excerpts ##
+excerpt_separator: <!--more-->
+excerpt_type: text # text | html
+
+## Sources ##
+# sources: bootcss #eg: bootcss | unpkg
+
+## Build ##
 markdown: kramdown
+highlighter: rouge
+permalink: date
 
-kramdown:
-  input: GFM
-  syntax_highlighter: rouge
+exclude:
+  - CHANGELOG.md
+  - CHECKLIST.md
+  - Gemfile
+  - Gemfile.lock
+  - LICENSE
+  - README-*.md
+  - README.md
+  - gulpfile.js
+  - jekyll-text-theme.gemspec
+  - package-lock.json
+  - package.json
+  - /docs
+  - /node_modules
+  - /screenshots
+  - /test
+  - /vendor
 
-# port
-# port: 1234
+## Plugins ##
+plugins:
+  - jekyll-sitemap
+  - jekyll-feed
+  - jekyll-paginate
+  - jemoji
 
-# url
-category_dir: category/
-tag_dir: tag/
-
-# excerpt
-excerpt_separator: "\n\n\n\n"
-
-# paginate
-gems: [jekyll-paginate]
-paginate: 5
+## Server ##
+server_url: "0.0.0.0"

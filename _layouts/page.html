@@ -1,28 +1,13 @@
 ---
-layout: default
+layout: base
 ---
-
-<div class="page clearfix" post>
-    <div class="left">
-        <h1>{{page.title}}</h1>
-        <hr>
-        {{content}}
-    </div>
-    <button class="anchor"><i class="fa fa-anchor"></i></button>
-    <div class="right">
-        <div class="wrap">
-
-            <!-- Content -->
-            <div class="side content">
-                <div>
-                    Content
-                </div>
-                <ul id="content-side" class="content-ul">
-                </ul>
-            </div>
-            <!-- 其他div框放到这里 -->
-            <!-- <div class="side">bbbb</div> -->
-        </div>
-    </div>
+<div class="m-page">
+  <article class="main">
+    {%- include snippets/page-title.html -%}
+    <div class="main-header"><h1>{{ __return }}</h1></div>
+    <div class="m-article-content" itemprop="articleBody">{{ content }}</div>
+    {%- if jekyll.environment != "development" and page.comment != false -%}
+      <section>{%- include comment.html -%}</section>
+    {%- endif -%}
+  </article>
 </div>
-<script src="{{ "/js/pageContent.js " | prepend: site.baseurl }}" charset="utf-8"></script>

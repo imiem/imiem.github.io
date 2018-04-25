@@ -1,729 +1,509 @@
-<!DOCTYPE html>
-<html>
+<!DOCTYPE html><html lang="zh">
+  <head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><title>博客 - imiem's blog</title>
+<meta name="description" content="imiem's blog
+">
+<link rel="canonical" href="http://localhost:4000/"><link rel="alternate" type="application/rss+xml" title="imiem's blog" href="http://localhost:4000/feed.xml">
+<!-- for Safari on iOS https://developer.apple.com/ios/human-interface-guidelines/icons-and-images/app-icon/ --><link rel="apple-touch-icon" sizes="180x180" href="/assets/images/logo/icon-180x180.png"><link rel="apple-touch-icon" sizes="167x167" href="/assets/images/logo/icon-167x167.png"><link rel="apple-touch-icon" sizes="152x152" href="/assets/images/logo/icon-152x152.png"><link rel="apple-touch-icon" sizes="120x120" href="/assets/images/logo/icon-120x120.png"><link rel="shortcut icon" href="/assets/images/logo/icon-120x120.png">
+<!-- for Chrome on Android https://developer.chrome.com/multidevice/android/installtohomescreen -->
+<meta name="mobile-web-app-capable" content="yes"><link rel="icon" sizes="192x192" href="/assets/images/logo/icon-192x192.png">
+<!-- for Edge on Windows 10 https://msdn.microsoft.com/en-us/library/dn255024(v=vs.85).aspx --><meta name="msapplication-TileImage" content="/assets/images/logo/icon-144x144.png"><meta name="msapplication-square310x310logo" content="/assets/images/logo/icon-310x310.png"><meta name="msapplication-wide310x150logo" content="/assets/images/logo/icon-310x150.png"><meta name="msapplication-square150x150logo" content="/assets/images/logo/icon-150x150.png"><meta name="msapplication-square70x70logo" content="/assets/images/logo/icon-70x70.png">
+<meta name="msapplication-TileColor" content="#eeeeee">
+<link rel="stylesheet" href="/assets/css/blog.css">
+    <script>(function() {
+  var Set = (function() {
+    var add = function(item) {
+      var i, data = this._data;
+      for (i = 0; i < data.length; i++) {
+        if (data[i] === item) {
+          return;
+        }
+      }
+      this.size ++;
+      data.push(item);
+      return data;
+    };
 
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    var Set = function(data) {
+      this.size = 0;
+      this._data = [];
+      var i;
+      if (data.length > 0) {
+        for (i = 0; i < data.length; i++) {
+          add.call(this, data[i]);
+        }
+      }
+    };
+    Set.prototype.add = add;
+    Set.prototype.get = function(index) { return this._data[index]; };
+    Set.prototype.has = function(item) {
+      var i, data = this._data;
+      for (i = 0; i < data.length; i++) {
+        if (this.get(i) === item) {
+          return true;
+        }
+      }
+      return false;
+    };
+    Set.prototype.is = function(map) {
+      if (map._data.length !== this._data.length) { return false; }
+      var i, j, flag, tData = this._data, mData = map._data;
+      for (i = 0; i < tData.length; i++) {
+        for (flag = false, j = 0; j < mData.length; j++) {
+          if (tData[i] === mData[j]) {
+            flag = true;
+            break;
+          }
+        }
+        if (!flag) { return false; }
+      }
+      return true;
+    };
+    Set.prototype.values = function() {
+      return this._data;
+    };
+    return Set;
+  })();
+  window.isArray = function(val) {
+    return Object.prototype.toString.call(val) === '[object Array]';
+  };
+  window.isString = function(val) {
+    return typeof val === 'string';
+  };
+  window.Lazyload = (function(doc) {
+    var queue = {js: [], css: []}, sources = {js: {}, css: {}}, context = this;
+    var createNode = function(name, attrs) {
+      var node = doc.createElement(name), attr;
+      for (attr in attrs) {
+        if (attrs.hasOwnProperty(attr)) {
+          node.setAttribute(attr, attrs[attr]);
+        }
+      }
+      return node;
+    };
+    var end = function(type, url) {
+      var s, q, qi, cbs, i, j, cur, val, flag;
+      if (type === 'js' || type ==='css') {
+        s = sources[type], q = queue[type];
+        s[url] = true;
+        for (i = 0; i < q.length; i++) {
+          cur = q[i];
+          if (cur.urls.has(url)) {
+            qi = cur, val = qi.urls.values();
+            qi && (cbs = qi.callbacks);
+            for (flag = true, j = 0; j < val.length; j++) {
+              cur = val[j];
+              if (!s[cur]) {
+                flag = false;
+              }
+            }
+            if (flag && cbs && cbs.length > 0) {
+              for (j = 0; j < cbs.length; j++) {
+                cbs[j].call(context);
+              }
+              qi.load = true;
+            }
+          }
+        }
+      }
+    };
+    var load = function(type, urls, callback) {
+      var s, q, qi, node, i, cur,
+        _urls = typeof urls === 'string' ? new Set([urls]) : new Set(urls), val, url;
+      if (type === 'js' || type ==='css') {
+        s = sources[type], q = queue[type];
+        for (i = 0; i < q.length; i++) {
+          cur = q[i];
+          if (_urls.is(cur.urls)) {
+            qi = cur;
+            break;
+          }
+        }
+        val = _urls.values();
+        if (qi) {
+          callback && (qi.load || qi.callbacks.push(callback));
+          callback && (qi.load && callback());
+        } else {
+          q.push({
+            urls: _urls,
+            callbacks: callback ? [callback] : [],
+            load: false
+          });
+          for (i = 0; i < val.length; i++) {
+            node = null, url = val[i];
+            if (s[url] === undefined) {
+              (type === 'js' ) && (node = createNode('script', { src: url }));
+              (type === 'css') && (node = createNode('link', { rel: 'stylesheet', href: url }));
+              if (node) {
+                node.onload = (function(type, url) {
+                  return function() {
+                    end(type, url);
+                  };
+                })(type, url);
+                (doc.head || doc.body).appendChild(node);
+                s[url] = false;
+              }
+            }
+          }
+        }
+      }
+    };
+    return {
+      js: function(url, callback) {
+        load('js', url, callback);
+      },
+      css: function(url, callback) {
+        load('css', url, callback);
+      }
+    };
+  })(this.document);
 
-    <title>MrDebuger</title>
-    <meta name="description" content="">
+  window.throttle = function(func, wait) {
+    var args, result, thisArg, timeoutId, lastCalled = 0;
 
-    <link rel="shortcut icon" href="/favicon.ico?" type="image/x-icon">
-    <link rel="icon" href="/favicon.ico?" type="image/x-icon">
-    <link rel="stylesheet" href="https://cdn.bootcss.com/font-awesome/4.7.0/css/font-awesome.min.css">
-    <link rel="stylesheet" href="https://at.alicdn.com/t/font_8v3czwksspqlg14i.css">
-    <link rel="stylesheet" href="/css/main.css ">
-    <link rel="canonical" href="http://localhost:4000/">
-    <link rel="alternate" type="application/rss+xml" title="MrDebuger" href="http://localhost:4000/feed.xml ">
+    function trailingCall() {
+      lastCalled = new Date;
+      timeoutId = null;
+      result = func.apply(thisArg, args);
+    }
+    return function() {
+      var now = new Date,
+        remaining = wait - (now - lastCalled);
 
+      args = arguments;
+      thisArg = this;
 
-    <script>
-    // 百度统计代码
-    var _hmt = _hmt || [];
-    (function() {
-      var hm = document.createElement("script");
-      hm.src = "//hm.baidu.com/hm.js?56b9e78ea1792123711380efc641b40c";
-      var s = document.getElementsByTagName("script")[0];
-      s.parentNode.insertBefore(hm, s);
-    })();
-    </script>
+      if (remaining <= 0) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+        lastCalled = now;
+        result = func.apply(thisArg, args);
+      } else if (!timeoutId) {
+        timeoutId = setTimeout(trailingCall, remaining);
+      }
+      return result;
+    };
+  };
 
+  window.decodeUrl = function(str) {
+    return str ? decodeURIComponent(str.replace(/\+/g, '%20')) : '';
+  };
 
-    <script>
-    // google analytics
-      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-      })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+  window.hasEvent = function(event) {
+    return 'on'.concat(event) in window.document;
+  };
 
-      ga('create', 'UA-98427332-1', 'auto');
-      ga('send', 'pageview');
-
-    </script>
-
-
-
-</head>
-
-
+  window.pageLoad = (function () {
+    var loaded = false, cbs = [];
+    window.addEventListener('load', function () {
+      var i, cb; loaded = true;
+      if (cbs.length > 0) {
+        for (i = 0; i < cbs.length; i++) {
+          cb = cbs[i]; cb();
+        }
+      }
+    });
+    return {
+      then: function(cb) {
+        cb && (loaded ? cb() : (cbs.push(cb)));
+      }
+    };
+  })();
+})();</script>
+  </head>
   <body>
-
-    <header id="top">
-    <div class="wrapper">
-        <a href="/" class="brand">MrDebuger</a>
-        <small>God helps those who help themselves.</small>
-        <button id="headerMenu" class="menu"><i class="fa fa-bars"></i></button>
-        <nav id="headerNav">
-            <ul>
-                <li>
-                    
-                    <a class="active" href="/">
-                        
-                        <i class="fa fa-home"></i>Home
-                    </a>
-                </li>
-
-                
-                    
-                    <li>
-                        
-                        <a href="/archive/">
-                        
-                            <i class="fa fa-archive"></i>归档
-                        </a>
-                    </li>
-                    
-                
-                    
-                    <li>
-                        
-                        <a href="/category/">
-                        
-                            <i class="fa fa-th-list"></i>分类
-                        </a>
-                    </li>
-                    
-                
-                    
-                    <li>
-                        
-                        <a href="/tag/">
-                        
-                            <i class="fa fa-tags"></i>标签
-                        </a>
-                    </li>
-                    
-                
-                    
-                    <li>
-                        
-                        <a href="/collection/">
-                        
-                            <i class="fa fa-bookmark"></i>收藏
-                        </a>
-                    </li>
-                    
-                
-                    
-                    <li>
-                        
-                        <a href="/about/">
-                        
-                            <i class="fa fa-heart"></i>关于
-                        </a>
-                    </li>
-                    
-                
-                    
-                
-                    
-                
-                    
-                
-                    
-                
-            </ul>
-        </nav>
-    </div>
+    <div class="m-page-stage js-page-stage">
+      <div class="m-page-content"><header class="m-page-header">
+  <div class="main clearfix">
+    <div class='site-logo'><svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 width="24px" height="24px" viewBox="0 0 24 24">
+<style type="text/css">
+	.st0{fill:#666666;}
+</style>
+<path class="st0" d="M1.7,22.3c5.7-5.7,11.3-5.7,17,0c3.3-3.3,3.5-5.3,0.8-6c2.7,0.7,3.5-1.1,2.3-5.6s-3.3-5.2-6.3-2.1
+	c3-3,2.3-5.2-2.1-6.3S7,1.8,7.7,4.6C7,1.8,5,2.1,1.7,5.3C7.3,11,7.3,16.7,1.7,22.3"/>
+</svg><a title="imiem's blog
+" href="/">imiem's blog</a></div>
+    <nav>
+      <ul><li><a href="/">主页</a></li><li><a href="/all.html">归档</a></li><li><a href="/about.html">关于</a></li><li><a type="application/rss+xml" href="/feed.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
 </header>
-
-
-        <div class="page clearfix" index>
-    <div class="left">
-        <h1>Welcome to MrDebuger's Blog!</h1>
-        <small>这里记录着我的开发之路</small>
-        <hr>
-        <ul>
-            
-              <li>
-                <h2>
-                  <a class="post-link" href="/2017/03/31/LBS-GeoHash/">GeoHash实现周边推荐</a>
-                </h2>
-                <div class="label">
-                    <div class="label-card">
-                        <i class="fa fa-calendar"></i>2017-03-31
-                    </div>
-                    <div class="label-card">
-                        
-                    </div>
-                    <div class="label-card">
-                        
-                    </div>
-
-                    <div class="label-card">
-                    
-
-
-<!-- <span class="point">•</span> -->
-<span class="categories">
-  <i class="fa fa-th-list"></i>
-  
-    
-        <a href="/category/#Java" title="Category: Java" rel="category">Java</a>
-    
-  
-
-  <!-- <span class="point">•</span> -->
-</span>
-
-
-                    </div>
-
-                    <div class="label-card">
-                    
-<!-- <span class="point">•</span> -->
-<span class="pageTag">
-  <i class="fa fa-tags"></i>
-  
-    
-        <a href="/tag/#LBS" title="Tag: LBS" rel="tag">LBS</a>&nbsp;
-    
-        <a href="/tag/#GeoHash" title="Tag: GeoHash" rel="tag">GeoHash</a>
-    
-  
-
-</span>
-
-                    </div>
-                </div>
-                <div class="excerpt">
-                    
-<p>旅游，外卖等需要定位的项目中一般会有周边推荐的需求，如推荐出周边五公里的景点。目前实现的算法也有很多，这里简单的说下GeoHash的实现原理以及Java的实现代码。</p>
-
-
-                </div>
-                <div class="read-all">
-                    <a  href="/2017/03/31/LBS-GeoHash/"><i class="fa fa-newspaper-o"></i>Read All</a>
-                </div>
-                <hr>
-              </li>
-            
-              <li>
-                <h2>
-                  <a class="post-link" href="/2017/03/06/SpringBoot-Redis-Session/">springboot redis实现session共享</a>
-                </h2>
-                <div class="label">
-                    <div class="label-card">
-                        <i class="fa fa-calendar"></i>2017-03-06
-                    </div>
-                    <div class="label-card">
-                        
-                    </div>
-                    <div class="label-card">
-                        
-                    </div>
-
-                    <div class="label-card">
-                    
-
-
-<!-- <span class="point">•</span> -->
-<span class="categories">
-  <i class="fa fa-th-list"></i>
-  
-    
-        <a href="/category/#Java" title="Category: Java" rel="category">Java</a>
-    
-  
-
-  <!-- <span class="point">•</span> -->
-</span>
-
-
-                    </div>
-
-                    <div class="label-card">
-                    
-<!-- <span class="point">•</span> -->
-<span class="pageTag">
-  <i class="fa fa-tags"></i>
-  
-    
-        <a href="/tag/#redis" title="Tag: redis" rel="tag">redis</a>&nbsp;
-    
-        <a href="/tag/#tomcat" title="Tag: tomcat" rel="tag">tomcat</a>&nbsp;
-    
-        <a href="/tag/#session" title="Tag: session" rel="tag">session</a>
-    
-  
-
-</span>
-
-                    </div>
-                </div>
-                <div class="excerpt">
-                    <p>当创建分布式服务时会出现session共享的问题，即第一次访问的时候负载均衡会将请求分配到server1上，但是当第二次访问的时候，如果请求没有分配到server1上，那么用户的会话状态将丢失。下面给出了一种使用springboot整合redis的共享session的例子。</p>
-
-
-                </div>
-                <div class="read-all">
-                    <a  href="/2017/03/06/SpringBoot-Redis-Session/"><i class="fa fa-newspaper-o"></i>Read All</a>
-                </div>
-                <hr>
-              </li>
-            
-              <li>
-                <h2>
-                  <a class="post-link" href="/2016/07/06/Chrome-Extension/">小觑Chrome Extension</a>
-                </h2>
-                <div class="label">
-                    <div class="label-card">
-                        <i class="fa fa-calendar"></i>2016-07-06
-                    </div>
-                    <div class="label-card">
-                        
-                    </div>
-                    <div class="label-card">
-                        
-                    </div>
-
-                    <div class="label-card">
-                    
-
-
-<!-- <span class="point">•</span> -->
-<span class="categories">
-  <i class="fa fa-th-list"></i>
-  
-    
-        <a href="/category/#前端" title="Category: 前端" rel="category">前端</a>
-    
-  
-
-  <!-- <span class="point">•</span> -->
-</span>
-
-
-                    </div>
-
-                    <div class="label-card">
-                    
-<!-- <span class="point">•</span> -->
-<span class="pageTag">
-  <i class="fa fa-tags"></i>
-  
-    
-        <a href="/tag/#Chrome" title="Tag: Chrome" rel="tag">Chrome</a>&nbsp;
-    
-        <a href="/tag/#Extension" title="Tag: Extension" rel="tag">Extension</a>
-    
-  
-
-</span>
-
-                    </div>
-                </div>
-                <div class="excerpt">
-                    
-<p>最近一朋友问了一个关于Chrome Extension的问题，因为之前从来没有接触过，然后就自己看着文档动手写了一个简单的示例。Chrome Extension除了官方的一个API接口外，其他的就是一些html，css，js的知识了，如果很熟悉这些，写一个简单的自己的插件还是可以的。这里只是做了一个最简单的功能，毕竟我的前端功底不是太好，如果想有更加深入的了解，强烈建议读下<a href="https://developer.chrome.com/extensions/getstarted">Chrome的官方文档</a>。</p>
-
-
-                </div>
-                <div class="read-all">
-                    <a  href="/2016/07/06/Chrome-Extension/"><i class="fa fa-newspaper-o"></i>Read All</a>
-                </div>
-                <hr>
-              </li>
-            
-              <li>
-                <h2>
-                  <a class="post-link" href="/2016/06/18/Java-Userful-Word/">Java Tips</a>
-                </h2>
-                <div class="label">
-                    <div class="label-card">
-                        <i class="fa fa-calendar"></i>2016-06-18
-                    </div>
-                    <div class="label-card">
-                        
-                    </div>
-                    <div class="label-card">
-                        
-                    </div>
-
-                    <div class="label-card">
-                    
-
-
-<!-- <span class="point">•</span> -->
-<span class="categories">
-  <i class="fa fa-th-list"></i>
-  
-    
-        <a href="/category/#架构" title="Category: 架构" rel="category">架构</a>
-    
-  
-
-  <!-- <span class="point">•</span> -->
-</span>
-
-
-                    </div>
-
-                    <div class="label-card">
-                    
-<!-- <span class="point">•</span> -->
-<span class="pageTag">
-  <i class="fa fa-tags"></i>
-  
-    
-        <a href="/tag/#Tips" title="Tag: Tips" rel="tag">Tips</a>
-    
-  
-
-</span>
-
-                    </div>
-                </div>
-                <div class="excerpt">
-                    <blockquote>
-  <p>纸上得来终觉浅，绝知此事要躬行。</p>
-</blockquote>
-
-
-                </div>
-                <div class="read-all">
-                    <a  href="/2016/06/18/Java-Userful-Word/"><i class="fa fa-newspaper-o"></i>Read All</a>
-                </div>
-                <hr>
-              </li>
-            
-              <li>
-                <h2>
-                  <a class="post-link" href="/2016/06/06/Java-Final/">final关键字</a>
-                </h2>
-                <div class="label">
-                    <div class="label-card">
-                        <i class="fa fa-calendar"></i>2016-06-06
-                    </div>
-                    <div class="label-card">
-                        
-                    </div>
-                    <div class="label-card">
-                        
-                    </div>
-
-                    <div class="label-card">
-                    
-
-
-<!-- <span class="point">•</span> -->
-<span class="categories">
-  <i class="fa fa-th-list"></i>
-  
-    
-        <a href="/category/#Java" title="Category: Java" rel="category">Java</a>
-    
-  
-
-  <!-- <span class="point">•</span> -->
-</span>
-
-
-                    </div>
-
-                    <div class="label-card">
-                    
-<!-- <span class="point">•</span> -->
-<span class="pageTag">
-  <i class="fa fa-tags"></i>
-  
-    
-        <a href="/tag/#Java" title="Tag: Java" rel="tag">Java</a>&nbsp;
-    
-        <a href="/tag/#final" title="Tag: final" rel="tag">final</a>&nbsp;
-    
-        <a href="/tag/#关键字" title="Tag: 关键字" rel="tag">关键字</a>
-    
-  
-
-</span>
-
-                    </div>
-                </div>
-                <div class="excerpt">
-                    
-<blockquote>
-  <p>根据上下文，final的含义有细微的差别，但通常它指的是<strong>“这是无法改变的”</strong>。不想做出改变可能出于两种理由：<strong>设计和效率</strong>。 final一般用于三种情况：变量、方法和类。</p>
-</blockquote>
-
-
-                </div>
-                <div class="read-all">
-                    <a  href="/2016/06/06/Java-Final/"><i class="fa fa-newspaper-o"></i>Read All</a>
-                </div>
-                <hr>
-              </li>
-            
-        </ul>
-
-
-
-        <!-- Pagination links -->
-        <div class="pagination">
-          
-            <span class="previous disable"><i class="fa fa-angle-double-left"></i></span>
-            <span class="previous disable"><i class="fa fa-angle-left"></i></span>
-          
-          <span class="page_number ">1/2</span>
-          
-            <a href="/page2" class="next"><i class="fa fa-angle-right"></i></a>
-            <a href="/page2" class="next"><i class="fa fa-angle-double-right"></i></a>
-          
-        </div>
-    </div>
-    <!-- <button class="anchor"><i class="fa fa-anchor"></i></button> -->
-    <div class="right">
-        <div class="wrap">
-            <div class="side">
-                <div>
-                    <i class="fa fa-pencil-square-o" aria-hidden="true"></i>
-                    Recent Posts
-                </div>
-                <ul class="content-ul" recent>
-                    
-                        <li><a href="/2017/03/31/LBS-GeoHash/">GeoHash实现周边推荐</a></li>
-                    
-                        <li><a href="/2017/03/06/SpringBoot-Redis-Session/">springboot redis实现session共享</a></li>
-                    
-                        <li><a href="/2016/07/06/Chrome-Extension/">小觑Chrome Extension</a></li>
-                    
-                        <li><a href="/2016/06/18/Java-Userful-Word/">Java Tips</a></li>
-                    
-                        <li><a href="/2016/06/06/Java-Final/">final关键字</a></li>
-                    
-                        <li><a href="/2016/05/20/Java-enum/">Java 中的 enum</a></li>
-                    
-                        <li><a href="/2016/05/20/Java-Garbage-Collection/">Java的垃圾回收机制</a></li>
-                    
-                        <li><a href="/2016/04/03/Java-Singleton/">Java 中的 单例</a></li>
-                    
-                </ul>
-            </div>
-
-            <!-- Content -->
-            <div class="side ">
-                <div>
-                    <i class="fa fa-th-list"></i>
-                    Categories
-                </div>
-                <ul class="content-ul" cate>
-                    
-                    <li>
-                        <a href="/category/#Java" class="categories-list-item" cate="Java">
-                            <span class="name">
-                                Java
-                            </span>
-                            <span class="badge">6</span>
-                        </a>
-                    </li>
-                    
-                    <li>
-                        <a href="/category/#架构" class="categories-list-item" cate="架构">
-                            <span class="name">
-                                架构
-                            </span>
-                            <span class="badge">1</span>
-                        </a>
-                    </li>
-                    
-                    <li>
-                        <a href="/category/#前端" class="categories-list-item" cate="前端">
-                            <span class="name">
-                                前端
-                            </span>
-                            <span class="badge">1</span>
-                        </a>
-                    </li>
-                    
-                </ul>
-            </div>
-            <!-- 其他div框放到这里 -->
-            <div class="side">
-                <div>
-                    <i class="fa fa-tags"></i>
-                    Tags
-                </div>
-                <div class="tags-cloud">
-                    
-                    
-                    
-                    
-
-                    
-
-                    
-                      
-                      
-                      
-                      
-                      
-                      <a href="/tag/#Java" style="font-size: 18pt; color: #000;">Java</a>
-                    
-                      
-                      
-                      
-                      
-                      
-                      <a href="/tag/#Singleton" style="font-size: 9pt; color: #999;">Singleton</a>
-                    
-                      
-                      
-                      
-                      
-                      
-                      <a href="/tag/#垃圾回收机制" style="font-size: 9pt; color: #999;">垃圾回收机制</a>
-                    
-                      
-                      
-                      
-                      
-                      
-                      <a href="/tag/#GC" style="font-size: 9pt; color: #999;">GC</a>
-                    
-                      
-                      
-                      
-                      
-                      
-                      <a href="/tag/#enum" style="font-size: 9pt; color: #999;">enum</a>
-                    
-                      
-                      
-                      
-                      
-                      
-                      <a href="/tag/#final" style="font-size: 9pt; color: #999;">final</a>
-                    
-                      
-                      
-                      
-                      
-                      
-                      <a href="/tag/#关键字" style="font-size: 9pt; color: #999;">关键字</a>
-                    
-                      
-                      
-                      
-                      
-                      
-                      <a href="/tag/#Tips" style="font-size: 9pt; color: #999;">Tips</a>
-                    
-                      
-                      
-                      
-                      
-                      
-                      <a href="/tag/#Chrome" style="font-size: 9pt; color: #999;">Chrome</a>
-                    
-                      
-                      
-                      
-                      
-                      
-                      <a href="/tag/#Extension" style="font-size: 9pt; color: #999;">Extension</a>
-                    
-                      
-                      
-                      
-                      
-                      
-                      <a href="/tag/#redis" style="font-size: 9pt; color: #999;">redis</a>
-                    
-                      
-                      
-                      
-                      
-                      
-                      <a href="/tag/#tomcat" style="font-size: 9pt; color: #999;">tomcat</a>
-                    
-                      
-                      
-                      
-                      
-                      
-                      <a href="/tag/#session" style="font-size: 9pt; color: #999;">session</a>
-                    
-                      
-                      
-                      
-                      
-                      
-                      <a href="/tag/#LBS" style="font-size: 9pt; color: #999;">LBS</a>
-                    
-                      
-                      
-                      
-                      
-                      
-                      <a href="/tag/#GeoHash" style="font-size: 9pt; color: #999;">GeoHash</a>
-                    
-                </div>
-            </div>
-
-            <!-- <div class="side">
-                <div>
-                    <i class="fa fa-external-link"></i>
-                    Links
-                </div>
-                <ul  class="content-ul">
-
-                </ul>
-            </div> -->
-        </div>
-    </div>
+<div class="m-page-main"><div class="m-home">
+  <div class="main">
+    <div class="m-post-list"><article><h1><a href="/centos7/2017/05/27/CentOS7-RabbitMQ.html">centos7 安装和配置 rabbitmq</a></h1>
+          <div class="m-article-content">
+  安装 erlang
+  安装 rabbitmq server
+  启动
+  安装 web 管理页面
+  用户管理
+  用户角色
+
+
+在 **centos 7 上安装和配置 rabbitmq。官方文档有更加详细的配置
+
+安装 erlang
+
+rabbitmq 需要有 erlang 的环境，如果使用 yum 安装，执行下面的命令
+
+ su -c 'rpm -Uvh http://download.fedoraproject.org/pub/epel/7/x86_64/e/epel-release-7-9.noarch.rpm'
+ su -c 'yum install foo’
+ yum install erlang
+
+执行完成后可以使用 erlang 进行检查是否安装成功。
+
+安装 ...</div><a href="/centos7/2017/05/27/CentOS7-RabbitMQ.html">点我阅读更多...</a><div class="m-article-info clearfix"><meta itemprop="author" itemscope itemtype="https://schema.org/Person"><meta itemprop="name" content="imiem"/></meta><ul class="tag-wrapper"><li>
+          <a class="pill-button" href="/all.html?tag=centos7">centos7</a>
+        </li><li>
+          <a class="pill-button" href="/all.html?tag=rabbitmq">rabbitmq</a>
+        </li></ul><div class="other-wrapper"><div class="date-wrapper"><span class="article-meta">2017年 05月27日</span></div>
+  </div>
 </div>
-<!-- <script src="/js/scroll.min.js " charset="utf-8"></script> -->
-<!-- <script src="/js/pageContent.js " charset="utf-8"></script> -->
+</article><article><h1><a href="/java/2017/03/31/LBS-GeoHash.html">GeoHash实现周边推荐</a></h1>
+          <div class="m-article-content">
+  GeoHash基础
+  GeoHash转换过程    
+      转换
+      合并
+    
+  
+  误差
+  Java实现代码
+  参考内容
 
 
-    <footer class="site-footer">
+旅游，外卖等需要定位的项目中一般会有周边推荐的需求，如推荐出周边五公里的景点。目前实现的算法也有很多，这里简单的说下GeoHash的实现原理以及Java的实现代码。
+
+GeoHash基础
 
 
-    <div class="wrapper">
+  GeoHash使用一个字符串来表示经度和纬度。这样在做周边搜索的时候可以在一列上加索引。
+  GeoHash表示的不是一个点，而是一个矩形区域。
+  精度范围为(-180,180),纬度范围为(-90,90)
 
-        <p class="description">
-             本站见证了我的开发历程！ 
-        </p>
-        <p class="contact">
-            Contact me at: 
-            <a href="https://github.com/MrDebuger" title="GitHub"><i class="fa fa-github" aria-hidden="true"></i></a>  
-            <a href="mailto:mailjianfeng@163.com" title="email"><i class="fa fa-envelope-o" aria-hidden="true"></i></a>  
-            <a href="http://weibo.com/Ghost_Heaven" title="Weibo"><i class="fa fa-weibo" aria-hidden="true"></i></a>  
-            <a href="https://www.zhihu.com/people/MrDebuger" title="Zhihu"><i class="iconfont icon-daoruzhihu"></i></a>   
-            <a href="https://www.facebook.com/王建丰" title="Facebook"><i class="fa fa-facebook-official" aria-hidden="true"></i></a>    
-        </p>
-        <p>
-            本站总访问量<span id="busuanzi_value_site_pv"></span>次，本站访客数<span id="busuanzi_value_site_uv"></span>人次，本文总阅读量<span id="busuanzi_value_page_pv"></span>次
-        </p>
-        <p class="power">
-            <span>
-                Site powered by <a href="https://jekyllrb.com/">Jekyll</a> & <a href="https://pages.github.com/">Github Pages</a>.
-            </span>
-            <span>
-                Theme designed by <a href="https://github.com/mrdebuger">mrdebuger</a>.
-            </span>
-        </p>
-    </div>
-</footer>
-<script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
 
-    <div class="back-to-top">
-    <a href="#top" data-scroll>
-        <i class="fa fa-arrow-up" aria-hidden="true"></i>
-    </a>
+GeoHash转换过程
+
+转换
+
+GeoHash就是将经纬度信息，转换为可以排序、比较的字符串编码。
+首先将纬度范围(-...</div><a href="/java/2017/03/31/LBS-GeoHash.html">点我阅读更多...</a><div class="m-article-info clearfix"><meta itemprop="author" itemscope itemtype="https://schema.org/Person"><meta itemprop="name" content="imiem"/></meta><ul class="tag-wrapper"><li>
+          <a class="pill-button" href="/all.html?tag=LBS">LBS</a>
+        </li><li>
+          <a class="pill-button" href="/all.html?tag=GeoHash">GeoHash</a>
+        </li></ul><div class="other-wrapper"><div class="date-wrapper"><span class="article-meta">2017年 03月31日</span></div>
+  </div>
 </div>
+</article><article><h1><a href="/java/2017/03/06/SpringBoot-Redis-Session.html">springboot redis实现session共享</a></h1>
+          <div class="m-article-content">
+  工具
+  模拟分布式
+  创建一个springboot项目
+  配置redis和访问的端口
+  配置redis缓存session
+  编写一个测试的控制类
+  测试
+  目前缺点
+  参考资料
 
-    <script src=" /js/main.js " charset="utf-8"></script>
-    <script src=" /js/smooth-scroll.min.js " charset="utf-8"></script>
-    <script type="text/javascript">
-      smoothScroll.init({
-        speed: 500, // Integer. How fast to complete the scroll in milliseconds
-        easing: 'easeInOutCubic', // Easing pattern to use
-        offset: 20, // Integer. How far to offset the scrolling anchor location in pixels
-      });
-    </script>
-    <!-- <script src=" /js/scroll.min.js " charset="utf-8"></script> -->
-  </body>
+当创建分布式服务时会出现session共享的问题，即第一次访问的时候负载均衡会将请求分配到server1上，但是当第二次访问的时候，如果请求没有分配到server1上，那么用户的会话状态将丢失。下面给出了一种使用springboot整合redis的共享session的例子。
 
+工具
+
+
+  nginx-1.7.10
+  redis-2.8
+
+
+模拟分布式
+
+使用nginx模拟一个简单的分布式的环境，在nginx.conf中添加
+upstream  tomcat  {  
+        ...</div><a href="/java/2017/03/06/SpringBoot-Redis-Session.html">点我阅读更多...</a><div class="m-article-info clearfix"><meta itemprop="author" itemscope itemtype="https://schema.org/Person"><meta itemprop="name" content="imiem"/></meta><ul class="tag-wrapper"><li>
+          <a class="pill-button" href="/all.html?tag=redis">redis</a>
+        </li><li>
+          <a class="pill-button" href="/all.html?tag=tomcat">tomcat</a>
+        </li><li>
+          <a class="pill-button" href="/all.html?tag=session">session</a>
+        </li></ul><div class="other-wrapper"><div class="date-wrapper"><span class="article-meta">2017年 03月06日</span></div>
+  </div>
+</div>
+</article><article><h1><a href="/%E5%89%8D%E7%AB%AF/2016/07/06/Chrome-Extension.html">小觑Chrome Extension</a></h1>
+          <div class="m-article-content">
+  为何不看看官方文档？
+  我要做什么？
+  文件组成    
+      基本文件组成
+      manifest.json
+      popup.html
+      popup.js
+      icon.png
+    
+  
+  如何查看效果？
+  问题总结
+
+
+最近一朋友问了一个关于Chrome Extension的问题，因为之前从来没有接触过，然后就自己看着文档动手写了一个简单的示例。Chrome Extension除了官方的一个API接口外，其他的就是一些html，css，js的知识了，如果很熟悉这些，写一个简单的自己的插件还是可以的。这里只是做了一个最简单的功能，毕竟我的前端功底不是太好，如果想有更加深入的了解，强烈建议读下Chrome的官方文档。
+
+为何不看...</div><a href="/%E5%89%8D%E7%AB%AF/2016/07/06/Chrome-Extension.html">点我阅读更多...</a><div class="m-article-info clearfix"><meta itemprop="author" itemscope itemtype="https://schema.org/Person"><meta itemprop="name" content="imiem"/></meta><ul class="tag-wrapper"><li>
+          <a class="pill-button" href="/all.html?tag=Chrome">Chrome</a>
+        </li><li>
+          <a class="pill-button" href="/all.html?tag=Extension">Extension</a>
+        </li></ul><div class="other-wrapper"><div class="date-wrapper"><span class="article-meta">2016年 07月06日</span></div>
+  </div>
+</div>
+</article><article><h1><a href="/%E6%9E%B6%E6%9E%84/2016/06/18/Java-Userful-Word.html">Java Tips</a></h1>
+          <div class="m-article-content">
+  tips
+
+
+  纸上得来终觉浅，绝知此事要躬行。
+
+
+tips
+
+  面向对象的精髓是模拟现实，需要多从现实中考虑面向对象的东西。
+  抽象类和接口的区别在于使用动机，使用抽象类是为了复用，使用接口是为了实现多态。接口和他的子类应该是一般和特殊的关系，而接口仅仅是它的之类应该实现的一组规则。
+
+
+</div><a href="/%E6%9E%B6%E6%9E%84/2016/06/18/Java-Userful-Word.html">点我阅读更多...</a><div class="m-article-info clearfix"><meta itemprop="author" itemscope itemtype="https://schema.org/Person"><meta itemprop="name" content="imiem"/></meta><ul class="tag-wrapper"><li>
+          <a class="pill-button" href="/all.html?tag=Tips">Tips</a>
+        </li></ul><div class="other-wrapper"><div class="date-wrapper"><span class="article-meta">2016年 06月18日</span></div>
+  </div>
+</div>
+</article><article><h1><a href="/java/2016/06/06/Java-Final.html">final关键字</a></h1>
+          <div class="m-article-content">
+  final变量
+  final方法
+  final类
+  final关键字的好处？
+  关键点
+
+
+
+  根据上下文，final的含义有细微的差别，但通常它指的是“这是无法改变的”。不想做出改变可能出于两种理由：设计和效率。 final一般用于三种情况：变量、方法和类。
+
+
+final变量
+凡是对成员变量和本地变量（在方法中和代码块中的变量）声明为final的都称为final变量，final变量经常和static关键字一块使用，作为常量。
+
+public static final String DEL_FLAG_NORMAL = "0";
+public static final String DEL_FLAG_DELETE = "1";
+public static final S...</div><a href="/java/2016/06/06/Java-Final.html">点我阅读更多...</a><div class="m-article-info clearfix"><meta itemprop="author" itemscope itemtype="https://schema.org/Person"><meta itemprop="name" content="imiem"/></meta><ul class="tag-wrapper"><li>
+          <a class="pill-button" href="/all.html?tag=Java">Java</a>
+        </li><li>
+          <a class="pill-button" href="/all.html?tag=final">final</a>
+        </li><li>
+          <a class="pill-button" href="/all.html?tag=%E5%85%B3%E9%94%AE%E5%AD%97">关键字</a>
+        </li></ul><div class="other-wrapper"><div class="date-wrapper"><span class="article-meta">2016年 06月06日</span></div>
+  </div>
+</div>
+</article><article><h1><a href="/java/2016/05/20/Java-enum.html">Java 中的 enum</a></h1>
+          <div class="m-article-content">
+  为什么使用枚举？
+  增加代码的可读性
+
+
+枚举可以理解为有相似类型的“数据集”,并且数值稳定，数据集有限。
+
+为什么使用枚举？
+
+  public static final VS enum
+
+
+增加代码的可读性
+</div><a href="/java/2016/05/20/Java-enum.html">点我阅读更多...</a><div class="m-article-info clearfix"><meta itemprop="author" itemscope itemtype="https://schema.org/Person"><meta itemprop="name" content="imiem"/></meta><ul class="tag-wrapper"><li>
+          <a class="pill-button" href="/all.html?tag=Java">Java</a>
+        </li><li>
+          <a class="pill-button" href="/all.html?tag=enum">enum</a>
+        </li></ul><div class="other-wrapper"><div class="date-wrapper"><span class="article-meta">2016年 05月20日</span></div>
+  </div>
+</div>
+</article></div><nav class="m-pagination"><p>共计 9 篇文章，2 页。</p>
+          <ul><li><div class="round-button inactive">
+                <div class="icon icon--prrevious"><svg fill="#000000" width="24px" height="24px" viewBox="0 0 24 24" version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+</svg>
+</div></div>
+              </li><li>
+                  <div class="round-button cur"><span>1</span></div>
+                </li><li>
+                    <a class="round-button" href="/page2"><span>2</span></a>
+                  </li><li>
+                <a class="round-button" href="/page2">
+                  <div class="icon icon--next"><svg fill="#000000" width="24px" height="24px" viewBox="0 0 24 24" version="1.1" xmlns="http://www.w3.org/2000/svg">
+  <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/>
+</svg>
+</div>
+                </a>
+              </li></ul>
+        </nav></div>
+</div>
+</div>
+      </div>
+    </div><div class="m-page-footer js-page-footer">
+  <div class="main">
+    <aside><div class="follow-me"><ul itemscope itemtype="http://schema.org/Person">
+    <meta itemprop="name" content="imiem">
+    <link itemprop="url" href="http://localhost:4000/"></ul></div>
+</aside>
+    <footer class="site-info">
+      <p>© imiem's blog 2018</p>
+      <p>Powered by <a title="Jekyll is a simple, blog-aware, static site generator." href="http://jekyllrb.com/">Jekyll</a></p>
+    </footer>
+  </div>
+</div><script>(function () {
+  var $body = document.body;
+  function classnames(classes) {
+    var i, cur, _classes = '';
+    if (window.isString(classes)) {
+      _classes =  classes;
+    } else if (window.isArray(classes)) {
+      for (i = 0; i < classes.length; i++) {
+        cur = classes[i];
+        if (window.isString(cur)) {
+          _classes = _classes.concat(_classes ? ' ' + cur : cur);
+        }
+      }
+    } else {
+      return '';
+    }
+    return _classes;
+  }
+  function addClass(dom, classname) {
+    dom.setAttribute('class', classnames([dom.getAttribute('class'), classname]));
+  }
+  if (window.hasEvent('touchstart')) {
+    addClass($body, 'is-touch');
+    document.addEventListener('touchstart', function(){}, false);
+  } else {
+    addClass($body, 'not-touch');
+  }
+})();</script><script>
+  (function() {
+    var TEXT_VARIABLES = {
+      sources: {
+        jquery: 'https://cdn.bootcss.com/jquery/3.1.1/jquery.min.js',
+        leancloud_js_sdk: '//cdn1.lncld.net/static/js/3.4.1/av-min.js',
+        chart: 'https://cdn.bootcss.com/Chart.js/2.7.1/Chart.bundle.min.js',
+        gitalk: {
+          js: 'https://cdn.bootcss.com/gitalk/1.2.2/gitalk.min.js',
+          css: 'https://cdn.bootcss.com/gitalk/1.2.2/gitalk.min.css'
+        },
+        mathjax: 'https://cdn.bootcss.com/mathjax/2.7.2/MathJax.js?config=TeX-MML-AM_CHTML',
+        mermaid: 'https://cdn.bootcss.com/mermaid/7.1.2/mermaid.min.js'
+      },
+      site: {
+        toc: {
+          selectors: 'h1,h2,h3'
+        }
+      }
+    };
+    window.TEXT_VARIABLES = TEXT_VARIABLES;
+  })();
+</script><script></script></body>
 </html>

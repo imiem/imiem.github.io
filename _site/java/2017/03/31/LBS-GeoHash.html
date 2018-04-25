@@ -1,0 +1,1108 @@
+<!DOCTYPE html><html lang="zh">
+  <head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><title>GeoHash实现周边推荐 - imiem's blog</title>
+<meta name="description" content="  GeoHash基础  GeoHash转换过程          转换      合并        误差  Java实现代码  参考内容旅游，外卖等需要定位的项目中一般会有周边推荐的需求，如推荐出周边五公里的景点。目前实现的算法也有很多，这里简单的说下GeoHash的实现原理以及Java的实现代码。GeoHa...">
+<link rel="canonical" href="http://localhost:4000/java/2017/03/31/LBS-GeoHash.html"><link rel="alternate" type="application/rss+xml" title="imiem's blog" href="http://localhost:4000/feed.xml">
+<!-- for Safari on iOS https://developer.apple.com/ios/human-interface-guidelines/icons-and-images/app-icon/ --><link rel="apple-touch-icon" sizes="180x180" href="/assets/images/logo/icon-180x180.png"><link rel="apple-touch-icon" sizes="167x167" href="/assets/images/logo/icon-167x167.png"><link rel="apple-touch-icon" sizes="152x152" href="/assets/images/logo/icon-152x152.png"><link rel="apple-touch-icon" sizes="120x120" href="/assets/images/logo/icon-120x120.png"><link rel="shortcut icon" href="/assets/images/logo/icon-120x120.png">
+<!-- for Chrome on Android https://developer.chrome.com/multidevice/android/installtohomescreen -->
+<meta name="mobile-web-app-capable" content="yes"><link rel="icon" sizes="192x192" href="/assets/images/logo/icon-192x192.png">
+<!-- for Edge on Windows 10 https://msdn.microsoft.com/en-us/library/dn255024(v=vs.85).aspx --><meta name="msapplication-TileImage" content="/assets/images/logo/icon-144x144.png"><meta name="msapplication-square310x310logo" content="/assets/images/logo/icon-310x310.png"><meta name="msapplication-wide310x150logo" content="/assets/images/logo/icon-310x150.png"><meta name="msapplication-square150x150logo" content="/assets/images/logo/icon-150x150.png"><meta name="msapplication-square70x70logo" content="/assets/images/logo/icon-70x70.png">
+<meta name="msapplication-TileColor" content="#eeeeee">
+<link rel="stylesheet" href="/assets/css/blog.css">
+    <script>(function() {
+  var Set = (function() {
+    var add = function(item) {
+      var i, data = this._data;
+      for (i = 0; i < data.length; i++) {
+        if (data[i] === item) {
+          return;
+        }
+      }
+      this.size ++;
+      data.push(item);
+      return data;
+    };
+
+    var Set = function(data) {
+      this.size = 0;
+      this._data = [];
+      var i;
+      if (data.length > 0) {
+        for (i = 0; i < data.length; i++) {
+          add.call(this, data[i]);
+        }
+      }
+    };
+    Set.prototype.add = add;
+    Set.prototype.get = function(index) { return this._data[index]; };
+    Set.prototype.has = function(item) {
+      var i, data = this._data;
+      for (i = 0; i < data.length; i++) {
+        if (this.get(i) === item) {
+          return true;
+        }
+      }
+      return false;
+    };
+    Set.prototype.is = function(map) {
+      if (map._data.length !== this._data.length) { return false; }
+      var i, j, flag, tData = this._data, mData = map._data;
+      for (i = 0; i < tData.length; i++) {
+        for (flag = false, j = 0; j < mData.length; j++) {
+          if (tData[i] === mData[j]) {
+            flag = true;
+            break;
+          }
+        }
+        if (!flag) { return false; }
+      }
+      return true;
+    };
+    Set.prototype.values = function() {
+      return this._data;
+    };
+    return Set;
+  })();
+  window.isArray = function(val) {
+    return Object.prototype.toString.call(val) === '[object Array]';
+  };
+  window.isString = function(val) {
+    return typeof val === 'string';
+  };
+  window.Lazyload = (function(doc) {
+    var queue = {js: [], css: []}, sources = {js: {}, css: {}}, context = this;
+    var createNode = function(name, attrs) {
+      var node = doc.createElement(name), attr;
+      for (attr in attrs) {
+        if (attrs.hasOwnProperty(attr)) {
+          node.setAttribute(attr, attrs[attr]);
+        }
+      }
+      return node;
+    };
+    var end = function(type, url) {
+      var s, q, qi, cbs, i, j, cur, val, flag;
+      if (type === 'js' || type ==='css') {
+        s = sources[type], q = queue[type];
+        s[url] = true;
+        for (i = 0; i < q.length; i++) {
+          cur = q[i];
+          if (cur.urls.has(url)) {
+            qi = cur, val = qi.urls.values();
+            qi && (cbs = qi.callbacks);
+            for (flag = true, j = 0; j < val.length; j++) {
+              cur = val[j];
+              if (!s[cur]) {
+                flag = false;
+              }
+            }
+            if (flag && cbs && cbs.length > 0) {
+              for (j = 0; j < cbs.length; j++) {
+                cbs[j].call(context);
+              }
+              qi.load = true;
+            }
+          }
+        }
+      }
+    };
+    var load = function(type, urls, callback) {
+      var s, q, qi, node, i, cur,
+        _urls = typeof urls === 'string' ? new Set([urls]) : new Set(urls), val, url;
+      if (type === 'js' || type ==='css') {
+        s = sources[type], q = queue[type];
+        for (i = 0; i < q.length; i++) {
+          cur = q[i];
+          if (_urls.is(cur.urls)) {
+            qi = cur;
+            break;
+          }
+        }
+        val = _urls.values();
+        if (qi) {
+          callback && (qi.load || qi.callbacks.push(callback));
+          callback && (qi.load && callback());
+        } else {
+          q.push({
+            urls: _urls,
+            callbacks: callback ? [callback] : [],
+            load: false
+          });
+          for (i = 0; i < val.length; i++) {
+            node = null, url = val[i];
+            if (s[url] === undefined) {
+              (type === 'js' ) && (node = createNode('script', { src: url }));
+              (type === 'css') && (node = createNode('link', { rel: 'stylesheet', href: url }));
+              if (node) {
+                node.onload = (function(type, url) {
+                  return function() {
+                    end(type, url);
+                  };
+                })(type, url);
+                (doc.head || doc.body).appendChild(node);
+                s[url] = false;
+              }
+            }
+          }
+        }
+      }
+    };
+    return {
+      js: function(url, callback) {
+        load('js', url, callback);
+      },
+      css: function(url, callback) {
+        load('css', url, callback);
+      }
+    };
+  })(this.document);
+
+  window.throttle = function(func, wait) {
+    var args, result, thisArg, timeoutId, lastCalled = 0;
+
+    function trailingCall() {
+      lastCalled = new Date;
+      timeoutId = null;
+      result = func.apply(thisArg, args);
+    }
+    return function() {
+      var now = new Date,
+        remaining = wait - (now - lastCalled);
+
+      args = arguments;
+      thisArg = this;
+
+      if (remaining <= 0) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+        lastCalled = now;
+        result = func.apply(thisArg, args);
+      } else if (!timeoutId) {
+        timeoutId = setTimeout(trailingCall, remaining);
+      }
+      return result;
+    };
+  };
+
+  window.decodeUrl = function(str) {
+    return str ? decodeURIComponent(str.replace(/\+/g, '%20')) : '';
+  };
+
+  window.hasEvent = function(event) {
+    return 'on'.concat(event) in window.document;
+  };
+
+  window.pageLoad = (function () {
+    var loaded = false, cbs = [];
+    window.addEventListener('load', function () {
+      var i, cb; loaded = true;
+      if (cbs.length > 0) {
+        for (i = 0; i < cbs.length; i++) {
+          cb = cbs[i]; cb();
+        }
+      }
+    });
+    return {
+      then: function(cb) {
+        cb && (loaded ? cb() : (cbs.push(cb)));
+      }
+    };
+  })();
+})();</script>
+  </head>
+  <body>
+    <div class="m-page-stage js-page-stage">
+      <div class="m-page-content"><header class="m-page-header">
+  <div class="main clearfix">
+    <div class='site-logo'><svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 width="24px" height="24px" viewBox="0 0 24 24">
+<style type="text/css">
+	.st0{fill:#666666;}
+</style>
+<path class="st0" d="M1.7,22.3c5.7-5.7,11.3-5.7,17,0c3.3-3.3,3.5-5.3,0.8-6c2.7,0.7,3.5-1.1,2.3-5.6s-3.3-5.2-6.3-2.1
+	c3-3,2.3-5.2-2.1-6.3S7,1.8,7.7,4.6C7,1.8,5,2.1,1.7,5.3C7.3,11,7.3,16.7,1.7,22.3"/>
+</svg><a title="imiem's blog
+" href="/">imiem's blog</a></div>
+    <nav>
+      <ul><li><a href="/">主页</a></li><li><a href="/all.html">归档</a></li><li><a href="/about.html">关于</a></li><li><a type="application/rss+xml" href="/feed.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+<div class="m-page-main"><div class="m-post">
+	<div class="main clearfix js-main">
+		<div class="col-2 js-col-2">
+			<aside class="js-article-aside"><div class="m-toc js-toc"></div></aside>
+		</div>
+		<div class="col-1">
+			<article class="js-article" itemscope itemtype="http://schema.org/BlogPosting">
+				<meta itemprop="mainEntityOfPage" itemscope itemType="https://schema.org/WebPage"/>
+				<header class="main-header"><h1 itemprop="headline" itemprop="name headline">GeoHash实现周边推荐</h1><div class="m-article-info clearfix"><meta itemprop="author" itemscope itemtype="https://schema.org/Person"><meta itemprop="name" content="imiem"/></meta><ul class="tag-wrapper"><li>
+          <a class="pill-button" href="/all.html?tag=LBS">LBS</a>
+        </li><li>
+          <a class="pill-button" href="/all.html?tag=GeoHash">GeoHash</a>
+        </li></ul><div class="other-wrapper"><div class="date-wrapper"><time class="article-meta" datetime="2017-03-31T21:06:05+08:00"
+          itemprop="datePublished">2017年 03月31日
+        </time></div>
+  </div>
+</div>
+</header>
+				<div class="m-article-content js-article-content" itemprop="articleBody"><ul id="markdown-toc">
+  <li><a href="#geohash基础" id="markdown-toc-geohash基础">GeoHash基础</a></li>
+  <li><a href="#geohash转换过程" id="markdown-toc-geohash转换过程">GeoHash转换过程</a>    <ul>
+      <li><a href="#转换" id="markdown-toc-转换">转换</a></li>
+      <li><a href="#合并" id="markdown-toc-合并">合并</a></li>
+    </ul>
+  </li>
+  <li><a href="#误差" id="markdown-toc-误差">误差</a></li>
+  <li><a href="#java实现代码" id="markdown-toc-java实现代码">Java实现代码</a></li>
+  <li><a href="#参考内容" id="markdown-toc-参考内容">参考内容</a></li>
+</ul>
+
+<p>旅游，外卖等需要定位的项目中一般会有周边推荐的需求，如推荐出周边五公里的景点。目前实现的算法也有很多，这里简单的说下GeoHash的实现原理以及Java的实现代码。</p>
+
+<h2 id="geohash基础">GeoHash基础</h2>
+
+<ul>
+  <li>GeoHash使用一个字符串来表示经度和纬度。这样在做周边搜索的时候可以在一列上加索引。</li>
+  <li>GeoHash表示的不是一个点，而是一个矩形区域。</li>
+  <li>精度范围为(-180,180),纬度范围为(-90,90)</li>
+</ul>
+
+<h2 id="geohash转换过程">GeoHash转换过程</h2>
+
+<h3 id="转换">转换</h3>
+
+<p>GeoHash就是将经纬度信息，转换为可以排序、比较的字符串编码。
+首先将纬度范围(-90,90)分为两个区间(-90,0),(0,90),如果目标纬度在前一个区间，编码为0，否则编码为1。以此类推，直到精度符合要求为止。</p>
+
+<p>给出一个经纬度(39.92324,116.3906)，转换过程如下</p>
+
+<table boder="1px" cellspacing="0px" style="width:100%">
+	<tr>
+		<td>纬度范围</td>
+		<td>划分区间0</td>
+		<td>划分区间1</td>
+		<td>39.92324所属区间</td>
+	</tr>
+	<tr>
+		<td>(-90, 90)</td>
+		<td>(-90, 0.0)</td>
+		<td>(0.0, 90)</td>
+		<td>1</td>
+	</tr>
+	<tr>
+		<td>(0.0, 90)</td>
+		<td>(0.0, 45.0)</td>
+		<td>(45.0, 90)</td>
+		<td>0</td>
+	</tr>
+	<tr>
+		<td>(0.0, 45.0)</td>
+		<td>(0.0, 22.5)</td>
+		<td>(22.5, 45.0)</td>
+		<td>1</td>
+	</tr>
+	<tr>
+		<td>(22.5, 45.0)</td>
+		<td>(22.5, 33.75)</td>
+		<td>(33.75, 45.0)</td>
+		<td>1</td>
+	</tr>
+	<tr>
+		<td>(33.75, 45.0)</td>
+		<td>(33.75, 39.375)</td>
+		<td>(39.375, 45.0)</td>
+		<td>1</td>
+	</tr>
+	<tr>
+		<td>(39.375, 45.0)</td>
+		<td>(39.375, 42.1875)</td>
+		<td>(42.1875, 45.0)</td>
+		<td>0</td>
+	</tr>
+	<tr>
+		<td>(39.375, 42.1875)</td>
+		<td>(39.375, 40.7812)</td>
+		<td>(40.7812, 42.1875)</td>
+		<td>0</td>
+	</tr>
+	<tr>
+		<td>(39.375, 40.7812)</td>
+		<td>(39.375, 40.0781)</td>
+		<td>(40.0781, 40.7812)</td>
+		<td>0</td>
+	</tr>
+	<tr>
+		<td>(39.375, 40.0781)</td>
+		<td>(39.375, 39.7265)</td>
+		<td>(39.7265, 40.0781)</td>
+		<td>1</td>
+	</tr>
+	<tr>
+		<td>(39.7265, 40.0781)</td>
+		<td>(39.7265, 39.9023)</td>
+		<td>(39.9023, 40.0781)</td>
+		<td>1</td>
+	</tr>
+	<tr>
+		<td>(39.9023, 40.0781)</td>
+		<td>(39.9023, 39.9902)</td>
+		<td>(39.9902, 40.0781)</td>
+		<td>0</td>
+	</tr>
+	<tr>
+		<td>(39.9023, 39.9902)</td>
+		<td>(39.9023, 39.9462)</td>
+		<td>(39.9462, 39.9902)</td>
+		<td>0</td>
+	</tr>
+	<tr>
+		<td>(39.9023, 39.9462)</td>
+		<td>(39.9023, 39.9243)</td>
+		<td>(39.9243, 39.9462)</td>
+		<td>0</td>
+	</tr>
+	<tr>
+		<td>(39.9023, 39.9243)</td>
+		<td>(39.9023, 39.9133)</td>
+		<td>(39.9133, 39.9243)</td>
+		<td>1</td>
+	</tr>
+	<tr>
+		<td>(39.9133, 39.9243)</td>
+		<td>(39.9133, 39.9188)</td>
+		<td>(39.9188, 39.9243)</td>
+		<td>1</td>
+	</tr>
+	<tr>
+		<td>(39.9188, 39.9243)</td>
+		<td>(39.9188, 39.9215)</td>
+		<td>(39.9215, 39.9243)</td>
+		<td>1</td>
+	</tr>
+	<tr>
+		<td>(39.9215, 39.9243)</td>
+		<td>(39.9215, 39.9229)</td>
+		<td>(39.9229, 39.9243)</td>
+		<td>1</td>
+	</tr>
+	<tr>
+		<td>(39.9229, 39.9243)</td>
+		<td>(39.9229, 39.9236)</td>
+		<td>(39.9236, 39.9243)</td>
+		<td>0</td>
+	</tr>
+	<tr>
+		<td>(39.9229, 39.9236)</td>
+		<td>(39.9229, 39.92325)</td>
+		<td>(39.92325, 39.9236)</td>
+		<td>0</td>
+	</tr>
+	<tr>
+		<td>(39.9229, 39.92325)</td>
+		<td>(39.9229, 39.923075)</td>
+		<td>(39.923075, 39.92325)</td>
+		<td>1</td>
+	</tr>
+</table>
+
+<p>因此可以得到纬度的编码为 1011 1000 1100 0111 1001
+经度也用同样的算法，对(-180, 180)依次细分，得到116.3906的编码为1101 0010 1100 0100 0100。
+接下来将经度和纬度的编码合并，奇数位是纬度，偶数位是经度，得到编码 11100 11101 00100 01111 00000 01101 01011 00001。</p>
+
+<h3 id="合并">合并</h3>
+
+<p>将 11100 11101 00100 01111 00000 01101 01011 00001转化为对应的十进制为 28 29 4 15 0 13 11 1</p>
+
+<p>用0-9、b-z（去掉a, i, l, o）这32个字母进行base32编码</p>
+<table boder="1px" cellspacing="0px" style="width:100%">
+	
+	<tr>
+		<td>十进制</td>
+		<td>0</td>
+		<td>1</td>
+		<td>2</td>
+		<td>3</td>
+		<td>4</td>
+		<td>5</td>
+		<td>6</td>
+		<td>7</td>
+		<td>8</td>
+		<td>9</td>
+		<td>10</td>
+		<td>11</td>
+		<td>12</td>
+		<td>13</td>
+		<td>14</td>
+		<td>15</td>
+	</tr>
+	<tr>
+		<td>base32</td>
+		<td>0</td>
+		<td>1</td>
+		<td>2</td>
+		<td>3</td>
+		<td>4</td>
+		<td>5</td>
+		<td>6</td>
+		<td>7</td>
+		<td>8</td>
+		<td>9</td>
+		<td>b</td>
+		<td>c</td>
+		<td>d</td>
+		<td>e</td>
+		<td>f</td>
+		<td>g</td>
+	</tr>
+	<tr>
+		<td>十进制</td>
+		<td>16</td>
+		<td>17</td>
+		<td>18</td>
+		<td>19</td>
+		<td>20</td>
+		<td>21</td>
+		<td>22</td>
+		<td>23</td>
+		<td>24</td>
+		<td>25</td>
+		<td>26</td>
+		<td>27</td>
+		<td>28</td>
+		<td>29</td>
+		<td>30</td>
+		<td>31</td>
+	</tr>
+	<tr>
+		<td>base32</td>
+		<td>h</td>
+		<td>j</td>
+		<td>k</td>
+		<td>m</td>
+		<td>n</td>
+		<td>p</td>
+		<td>q</td>
+		<td>r</td>
+		<td>s</td>
+		<td>t</td>
+		<td>u</td>
+		<td>v</td>
+		<td>w</td>
+		<td>x</td>
+		<td>y</td>
+		<td>z</td>
+	</tr>
+</table>
+
+<p>可以得到(39.92324, 116.3906)的编码为wx4g0ec1</p>
+
+<h2 id="误差">误差</h2>
+
+<p>下表列出了不同的编码长度对应的精度：</p>
+<table boder="1px" cellspacing="0px" style="width:100%">
+	<tr>
+		<td>geohash length</td>
+		<td>lat bits</td>
+		<td>lng bits</td>
+		<td>lat error</td>
+		<td>lng error</td>
+		<td>km error</td>
+	</tr>
+	<tr>
+		<td>1</td>
+		<td>2</td>
+		<td>3</td>
+		<td>±23</td>
+		<td>±23</td>
+		<td>±2500</td>
+	</tr>
+	<tr>
+		<td>2</td>
+		<td>5</td>
+		<td>5</td>
+		<td>±2.8</td>
+		<td>±5.6</td>
+		<td>±630</td>
+	</tr>
+	<tr>
+		<td>3</td>
+		<td>7</td>
+		<td>8</td>
+		<td>±0.70</td>
+		<td>±0.7</td>
+		<td>±78</td>
+	</tr>
+	<tr>
+		<td>4</td>
+		<td>10</td>
+		<td>10</td>
+		<td>±0.087</td>
+		<td>±0.18</td>
+		<td>±20</td>
+	</tr>
+	<tr>
+		<td>5</td>
+		<td>12</td>
+		<td>13</td>
+		<td>±0.022</td>
+		<td>±0.022</td>
+		<td>±2.4</td>
+	</tr>
+	<tr>
+		<td>6</td>
+		<td>15</td>
+		<td>15</td>
+		<td>±0.0027</td>
+		<td>±0.0055</td>
+		<td>±0.61</td>
+	</tr>
+	<tr>
+		<td>7</td>
+		<td>17</td>
+		<td>18</td>
+		<td>±0.00068</td>
+		<td>±0.0068</td>
+		<td>±0.076</td>
+	</tr>
+	<tr>
+		<td>8</td>
+		<td>20</td>
+		<td>20</td>
+		<td>±0.000085</td>
+		<td>±0.00017</td>
+		<td>±0.019</td>
+	</tr>
+</table>
+
+<table boder="1px" cellspacing="0px" style="width:100%">
+	<tr>
+		<td>geohash length</td>
+		<td>width</td>
+		<td>height</td>
+	</tr>
+	<tr>
+		<td>1</td>
+		<td>5009.4km</td>
+		<td>4992.6km</td>
+	</tr>
+	<tr>
+		<td>2</td>
+		<td>1252.3km</td>
+		<td>624.1km</td>
+	</tr>
+	<tr>
+		<td>3</td>
+		<td>156.5km</td>
+		<td>156km</td>
+	</tr>
+	<tr>
+		<td>4</td>
+		<td>39.1km</td>
+		<td>19.5km</td>
+	</tr>
+	<tr>
+		<td>5</td>
+		<td>4.9km</td>
+		<td>4.9km</td>
+	</tr>
+	<tr>
+		<td>6</td>
+		<td>1.2km</td>
+		<td>609.4m</td>
+	</tr>
+	<tr>
+		<td>7</td>
+		<td>152.9m</td>
+		<td>152.4m</td>
+	</tr>
+	<tr>
+		<td>8</td>
+		<td>38.2m</td>
+		<td>19m</td>
+	</tr>
+	<tr>
+		<td>9</td>
+		<td>4.8m</td>
+		<td>4.8m</td>
+	</tr>
+	<tr>
+		<td>10</td>
+		<td>1.2m</td>
+		<td>59.5m</td>
+	</tr>
+	<tr>
+		<td>11</td>
+		<td>14.9cm</td>
+		<td>14.9cm</td>
+	</tr>
+	<tr>
+		<td>12</td>
+		<td>3.7cm</td>
+		<td>1.9cm</td>
+	</tr>
+
+</table>
+
+<h2 id="java实现代码">Java实现代码</h2>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">java.util.BitSet</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">java.util.HashMap</span><span class="o">;</span>  
+  
+  
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">GeoHash</span> <span class="o">{</span>  
+  
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kt">int</span> <span class="n">numbits</span> <span class="o">=</span> <span class="mi">6</span> <span class="o">*</span> <span class="mi">5</span><span class="o">;</span>  
+    <span class="kd">final</span> <span class="kd">static</span> <span class="kt">char</span><span class="o">[]</span> <span class="n">digits</span> <span class="o">=</span> <span class="o">{</span> <span class="sc">'0'</span><span class="o">,</span> <span class="sc">'1'</span><span class="o">,</span> <span class="sc">'2'</span><span class="o">,</span> <span class="sc">'3'</span><span class="o">,</span> <span class="sc">'4'</span><span class="o">,</span> <span class="sc">'5'</span><span class="o">,</span> <span class="sc">'6'</span><span class="o">,</span> <span class="sc">'7'</span><span class="o">,</span> <span class="sc">'8'</span><span class="o">,</span>  
+            <span class="sc">'9'</span><span class="o">,</span> <span class="sc">'b'</span><span class="o">,</span> <span class="sc">'c'</span><span class="o">,</span> <span class="sc">'d'</span><span class="o">,</span> <span class="sc">'e'</span><span class="o">,</span> <span class="sc">'f'</span><span class="o">,</span> <span class="sc">'g'</span><span class="o">,</span> <span class="sc">'h'</span><span class="o">,</span> <span class="sc">'j'</span><span class="o">,</span> <span class="sc">'k'</span><span class="o">,</span> <span class="sc">'m'</span><span class="o">,</span> <span class="sc">'n'</span><span class="o">,</span> <span class="sc">'p'</span><span class="o">,</span>  
+            <span class="sc">'q'</span><span class="o">,</span> <span class="sc">'r'</span><span class="o">,</span> <span class="sc">'s'</span><span class="o">,</span> <span class="sc">'t'</span><span class="o">,</span> <span class="sc">'u'</span><span class="o">,</span> <span class="sc">'v'</span><span class="o">,</span> <span class="sc">'w'</span><span class="o">,</span> <span class="sc">'x'</span><span class="o">,</span> <span class="sc">'y'</span><span class="o">,</span> <span class="sc">'z'</span> <span class="o">};</span>  
+      
+    <span class="kd">final</span> <span class="kd">static</span> <span class="n">HashMap</span><span class="o">&lt;</span><span class="n">Character</span><span class="o">,</span> <span class="n">Integer</span><span class="o">&gt;</span> <span class="n">lookup</span> <span class="o">=</span> <span class="k">new</span> <span class="n">HashMap</span><span class="o">&lt;</span><span class="n">Character</span><span class="o">,</span> <span class="n">Integer</span><span class="o">&gt;();</span>  
+    <span class="kd">static</span> <span class="o">{</span>  
+        <span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>  
+        <span class="k">for</span> <span class="o">(</span><span class="kt">char</span> <span class="n">c</span> <span class="o">:</span> <span class="n">digits</span><span class="o">)</span>  
+            <span class="n">lookup</span><span class="o">.</span><span class="na">put</span><span class="o">(</span><span class="n">c</span><span class="o">,</span> <span class="n">i</span><span class="o">++);</span>  
+    <span class="o">}</span>  
+
+    <span class="kd">public</span> <span class="kt">double</span><span class="o">[]</span> <span class="nf">decode</span><span class="o">(</span><span class="n">String</span> <span class="n">geohash</span><span class="o">)</span> <span class="o">{</span>  
+        <span class="n">StringBuilder</span> <span class="n">buffer</span> <span class="o">=</span> <span class="k">new</span> <span class="n">StringBuilder</span><span class="o">();</span>  
+        <span class="k">for</span> <span class="o">(</span><span class="kt">char</span> <span class="n">c</span> <span class="o">:</span> <span class="n">geohash</span><span class="o">.</span><span class="na">toCharArray</span><span class="o">())</span> <span class="o">{</span>  
+  
+            <span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="n">lookup</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">c</span><span class="o">)</span> <span class="o">+</span> <span class="mi">32</span><span class="o">;</span>  
+            <span class="n">buffer</span><span class="o">.</span><span class="na">append</span><span class="o">(</span> <span class="n">Integer</span><span class="o">.</span><span class="na">toString</span><span class="o">(</span><span class="n">i</span><span class="o">,</span> <span class="mi">2</span><span class="o">).</span><span class="na">substring</span><span class="o">(</span><span class="mi">1</span><span class="o">)</span> <span class="o">);</span>  
+        <span class="o">}</span>  
+          
+        <span class="n">BitSet</span> <span class="n">lonset</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BitSet</span><span class="o">();</span>  
+        <span class="n">BitSet</span> <span class="n">latset</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BitSet</span><span class="o">();</span>  
+          
+        <span class="c1">//even bits  </span>
+        <span class="kt">int</span> <span class="n">j</span> <span class="o">=</span><span class="mi">0</span><span class="o">;</span>  
+        <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="o">;</span> <span class="n">i</span><span class="o">&lt;</span> <span class="n">numbits</span><span class="o">*</span><span class="mi">2</span><span class="o">;</span><span class="n">i</span><span class="o">+=</span><span class="mi">2</span><span class="o">)</span> <span class="o">{</span>  
+            <span class="kt">boolean</span> <span class="n">isSet</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>  
+            <span class="k">if</span> <span class="o">(</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">buffer</span><span class="o">.</span><span class="na">length</span><span class="o">()</span> <span class="o">)</span>  
+              <span class="n">isSet</span> <span class="o">=</span> <span class="n">buffer</span><span class="o">.</span><span class="na">charAt</span><span class="o">(</span><span class="n">i</span><span class="o">)</span> <span class="o">==</span> <span class="sc">'1'</span><span class="o">;</span>  
+            <span class="n">lonset</span><span class="o">.</span><span class="na">set</span><span class="o">(</span><span class="n">j</span><span class="o">++,</span> <span class="n">isSet</span><span class="o">);</span>  
+        <span class="o">}</span>  
+          
+        <span class="c1">//odd bits  </span>
+        <span class="n">j</span><span class="o">=</span><span class="mi">0</span><span class="o">;</span>  
+        <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span><span class="o">=</span><span class="mi">1</span><span class="o">;</span> <span class="n">i</span><span class="o">&lt;</span> <span class="n">numbits</span><span class="o">*</span><span class="mi">2</span><span class="o">;</span><span class="n">i</span><span class="o">+=</span><span class="mi">2</span><span class="o">)</span> <span class="o">{</span>  
+            <span class="kt">boolean</span> <span class="n">isSet</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>  
+            <span class="k">if</span> <span class="o">(</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">buffer</span><span class="o">.</span><span class="na">length</span><span class="o">()</span> <span class="o">)</span>  
+              <span class="n">isSet</span> <span class="o">=</span> <span class="n">buffer</span><span class="o">.</span><span class="na">charAt</span><span class="o">(</span><span class="n">i</span><span class="o">)</span> <span class="o">==</span> <span class="sc">'1'</span><span class="o">;</span>  
+            <span class="n">latset</span><span class="o">.</span><span class="na">set</span><span class="o">(</span><span class="n">j</span><span class="o">++,</span> <span class="n">isSet</span><span class="o">);</span>  
+        <span class="o">}</span>  
+          
+        <span class="kt">double</span> <span class="n">lon</span> <span class="o">=</span> <span class="n">decode</span><span class="o">(</span><span class="n">lonset</span><span class="o">,</span> <span class="o">-</span><span class="mi">180</span><span class="o">,</span> <span class="mi">180</span><span class="o">);</span>  
+        <span class="kt">double</span> <span class="n">lat</span> <span class="o">=</span> <span class="n">decode</span><span class="o">(</span><span class="n">latset</span><span class="o">,</span> <span class="o">-</span><span class="mi">90</span><span class="o">,</span> <span class="mi">90</span><span class="o">);</span>  
+          
+        <span class="k">return</span> <span class="k">new</span> <span class="kt">double</span><span class="o">[]</span> <span class="o">{</span><span class="n">lat</span><span class="o">,</span> <span class="n">lon</span><span class="o">};</span>       
+    <span class="o">}</span>  
+      
+    <span class="kd">private</span> <span class="kt">double</span> <span class="nf">decode</span><span class="o">(</span><span class="n">BitSet</span> <span class="n">bs</span><span class="o">,</span> <span class="kt">double</span> <span class="n">floor</span><span class="o">,</span> <span class="kt">double</span> <span class="n">ceiling</span><span class="o">)</span> <span class="o">{</span>  
+        <span class="kt">double</span> <span class="n">mid</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span>  
+        <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="o">;</span> <span class="n">i</span><span class="o">&lt;</span><span class="n">bs</span><span class="o">.</span><span class="na">length</span><span class="o">();</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>  
+            <span class="n">mid</span> <span class="o">=</span> <span class="o">(</span><span class="n">floor</span> <span class="o">+</span> <span class="n">ceiling</span><span class="o">)</span> <span class="o">/</span> <span class="mi">2</span><span class="o">;</span>  
+            <span class="k">if</span> <span class="o">(</span><span class="n">bs</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">i</span><span class="o">))</span>  
+                <span class="n">floor</span> <span class="o">=</span> <span class="n">mid</span><span class="o">;</span>  
+            <span class="k">else</span>  
+                <span class="n">ceiling</span> <span class="o">=</span> <span class="n">mid</span><span class="o">;</span>  
+        <span class="o">}</span>  
+        <span class="k">return</span> <span class="n">mid</span><span class="o">;</span>  
+    <span class="o">}</span>  
+      
+      
+    <span class="kd">public</span> <span class="n">String</span> <span class="nf">encode</span><span class="o">(</span><span class="kt">double</span> <span class="n">lat</span><span class="o">,</span> <span class="kt">double</span> <span class="n">lon</span><span class="o">)</span> <span class="o">{</span>  
+        <span class="n">BitSet</span> <span class="n">latbits</span> <span class="o">=</span> <span class="n">getBits</span><span class="o">(</span><span class="n">lat</span><span class="o">,</span> <span class="o">-</span><span class="mi">90</span><span class="o">,</span> <span class="mi">90</span><span class="o">);</span>  
+        <span class="n">BitSet</span> <span class="n">lonbits</span> <span class="o">=</span> <span class="n">getBits</span><span class="o">(</span><span class="n">lon</span><span class="o">,</span> <span class="o">-</span><span class="mi">180</span><span class="o">,</span> <span class="mi">180</span><span class="o">);</span>  
+        <span class="n">StringBuilder</span> <span class="n">buffer</span> <span class="o">=</span> <span class="k">new</span> <span class="n">StringBuilder</span><span class="o">();</span>  
+        <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">numbits</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>  
+            <span class="n">buffer</span><span class="o">.</span><span class="na">append</span><span class="o">(</span> <span class="o">(</span><span class="n">lonbits</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">i</span><span class="o">))?</span><span class="sc">'1'</span><span class="o">:</span><span class="sc">'0'</span><span class="o">);</span>  
+            <span class="n">buffer</span><span class="o">.</span><span class="na">append</span><span class="o">(</span> <span class="o">(</span><span class="n">latbits</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">i</span><span class="o">))?</span><span class="sc">'1'</span><span class="o">:</span><span class="sc">'0'</span><span class="o">);</span>  
+        <span class="o">}</span>  
+        <span class="k">return</span> <span class="nf">base32</span><span class="o">(</span><span class="n">Long</span><span class="o">.</span><span class="na">parseLong</span><span class="o">(</span><span class="n">buffer</span><span class="o">.</span><span class="na">toString</span><span class="o">(),</span> <span class="mi">2</span><span class="o">));</span>  
+    <span class="o">}</span>  
+  
+    <span class="kd">private</span> <span class="n">BitSet</span> <span class="nf">getBits</span><span class="o">(</span><span class="kt">double</span> <span class="n">lat</span><span class="o">,</span> <span class="kt">double</span> <span class="n">floor</span><span class="o">,</span> <span class="kt">double</span> <span class="n">ceiling</span><span class="o">)</span> <span class="o">{</span>  
+        <span class="n">BitSet</span> <span class="n">buffer</span> <span class="o">=</span> <span class="k">new</span> <span class="n">BitSet</span><span class="o">(</span><span class="n">numbits</span><span class="o">);</span>  
+        <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">numbits</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>  
+            <span class="kt">double</span> <span class="n">mid</span> <span class="o">=</span> <span class="o">(</span><span class="n">floor</span> <span class="o">+</span> <span class="n">ceiling</span><span class="o">)</span> <span class="o">/</span> <span class="mi">2</span><span class="o">;</span>  
+            <span class="k">if</span> <span class="o">(</span><span class="n">lat</span> <span class="o">&gt;=</span> <span class="n">mid</span><span class="o">)</span> <span class="o">{</span>  
+                <span class="n">buffer</span><span class="o">.</span><span class="na">set</span><span class="o">(</span><span class="n">i</span><span class="o">);</span>  
+                <span class="n">floor</span> <span class="o">=</span> <span class="n">mid</span><span class="o">;</span>  
+            <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>  
+                <span class="n">ceiling</span> <span class="o">=</span> <span class="n">mid</span><span class="o">;</span>  
+            <span class="o">}</span>  
+        <span class="o">}</span>  
+        <span class="k">return</span> <span class="n">buffer</span><span class="o">;</span>  
+    <span class="o">}</span>  
+  
+    <span class="kd">public</span> <span class="kd">static</span> <span class="n">String</span> <span class="nf">base32</span><span class="o">(</span><span class="kt">long</span> <span class="n">i</span><span class="o">)</span> <span class="o">{</span>  
+        <span class="kt">char</span><span class="o">[]</span> <span class="n">buf</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">char</span><span class="o">[</span><span class="mi">65</span><span class="o">];</span>  
+        <span class="kt">int</span> <span class="n">charPos</span> <span class="o">=</span> <span class="mi">64</span><span class="o">;</span>  
+        <span class="kt">boolean</span> <span class="n">negative</span> <span class="o">=</span> <span class="o">(</span><span class="n">i</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="o">);</span>  
+        <span class="k">if</span> <span class="o">(!</span><span class="n">negative</span><span class="o">)</span>  
+            <span class="n">i</span> <span class="o">=</span> <span class="o">-</span><span class="n">i</span><span class="o">;</span>  
+        <span class="k">while</span> <span class="o">(</span><span class="n">i</span> <span class="o">&lt;=</span> <span class="o">-</span><span class="mi">32</span><span class="o">)</span> <span class="o">{</span>  
+            <span class="n">buf</span><span class="o">[</span><span class="n">charPos</span><span class="o">--]</span> <span class="o">=</span> <span class="n">digits</span><span class="o">[(</span><span class="kt">int</span><span class="o">)</span> <span class="o">(-(</span><span class="n">i</span> <span class="o">%</span> <span class="mi">32</span><span class="o">))];</span>  
+            <span class="n">i</span> <span class="o">/=</span> <span class="mi">32</span><span class="o">;</span>  
+        <span class="o">}</span>  
+        <span class="n">buf</span><span class="o">[</span><span class="n">charPos</span><span class="o">]</span> <span class="o">=</span> <span class="n">digits</span><span class="o">[(</span><span class="kt">int</span><span class="o">)</span> <span class="o">(-</span><span class="n">i</span><span class="o">)];</span>  
+  
+        <span class="k">if</span> <span class="o">(</span><span class="n">negative</span><span class="o">)</span>  
+            <span class="n">buf</span><span class="o">[--</span><span class="n">charPos</span><span class="o">]</span> <span class="o">=</span> <span class="sc">'-'</span><span class="o">;</span>  
+        <span class="k">return</span> <span class="k">new</span> <span class="nf">String</span><span class="o">(</span><span class="n">buf</span><span class="o">,</span> <span class="n">charPos</span><span class="o">,</span> <span class="o">(</span><span class="mi">65</span> <span class="o">-</span> <span class="n">charPos</span><span class="o">));</span>  
+    <span class="o">}</span>  
+  
+<span class="o">}</span>
+
+</code></pre></div></div>
+
+<h2 id="参考内容">参考内容</h2>
+<ul>
+  <li><a href="http://www.cnblogs.com/dengxinglin/archive/2012/12/14/2817761.html">http://www.cnblogs.com/dengxinglin/archive/2012/12/14/2817761.html</a></li>
+  <li><a href="http://blog.csdn.net/xiaojimanman/article/details/50358506">http://blog.csdn.net/xiaojimanman/article/details/50358506</a></li>
+</ul>
+</div>
+				<footer><meta itemprop="dateModified" content="2017-03-31T21:06:05+08:00"><div class="article-license"><div class="m-license" style="display: none;"><div class="clearfix"></div>
+</div></div>
+				</footer>
+			</article>
+			<div class="article-previous-next clearfix"><div class="article-previous"><span>上篇</span><a href="/centos7/2017/05/27/CentOS7-RabbitMQ.html">centos7 安装和配置 rabbitmq</a></div><div class="article-next"><span>下篇</span><a href="/java/2017/03/06/SpringBoot-Redis-Session.html">springboot redis实现session共享</a></div></div></div>
+	</div>
+</div></div>
+      </div>
+    </div><div class="m-page-footer js-page-footer">
+  <div class="main">
+    <aside><div class="follow-me"><ul itemscope itemtype="http://schema.org/Person">
+    <meta itemprop="name" content="imiem">
+    <link itemprop="url" href="http://localhost:4000/"></ul></div>
+</aside>
+    <footer class="site-info">
+      <p>© imiem's blog 2018</p>
+      <p>Powered by <a title="Jekyll is a simple, blog-aware, static site generator." href="http://jekyllrb.com/">Jekyll</a></p>
+    </footer>
+  </div>
+</div><script>(function () {
+  var $body = document.body;
+  function classnames(classes) {
+    var i, cur, _classes = '';
+    if (window.isString(classes)) {
+      _classes =  classes;
+    } else if (window.isArray(classes)) {
+      for (i = 0; i < classes.length; i++) {
+        cur = classes[i];
+        if (window.isString(cur)) {
+          _classes = _classes.concat(_classes ? ' ' + cur : cur);
+        }
+      }
+    } else {
+      return '';
+    }
+    return _classes;
+  }
+  function addClass(dom, classname) {
+    dom.setAttribute('class', classnames([dom.getAttribute('class'), classname]));
+  }
+  if (window.hasEvent('touchstart')) {
+    addClass($body, 'is-touch');
+    document.addEventListener('touchstart', function(){}, false);
+  } else {
+    addClass($body, 'not-touch');
+  }
+})();</script><script>
+  (function() {
+    var TEXT_VARIABLES = {
+      sources: {
+        jquery: 'https://cdn.bootcss.com/jquery/3.1.1/jquery.min.js',
+        leancloud_js_sdk: '//cdn1.lncld.net/static/js/3.4.1/av-min.js',
+        chart: 'https://cdn.bootcss.com/Chart.js/2.7.1/Chart.bundle.min.js',
+        gitalk: {
+          js: 'https://cdn.bootcss.com/gitalk/1.2.2/gitalk.min.js',
+          css: 'https://cdn.bootcss.com/gitalk/1.2.2/gitalk.min.css'
+        },
+        mathjax: 'https://cdn.bootcss.com/mathjax/2.7.2/MathJax.js?config=TeX-MML-AM_CHTML',
+        mermaid: 'https://cdn.bootcss.com/mermaid/7.1.2/mermaid.min.js'
+      },
+      site: {
+        toc: {
+          selectors: 'h1,h2,h3'
+        }
+      }
+    };
+    window.TEXT_VARIABLES = TEXT_VARIABLES;
+  })();
+</script><script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  function scrollAnimateTo(destination, duration, callback) {
+    var $body = $('html, body'), bodyScrollTop = $body.scrollTop();
+    if(bodyScrollTop === destination) { return; }
+    $body.animate({ scrollTop: destination }, duration, callback);
+  }
+  window.scrollTopAnchor = function(anchor, callback) {
+    scrollAnimateTo($(anchor).offset().top, 400, function() {
+      window.history.replaceState(null, '', window.location.href.split('#')[0] + anchor);
+      callback && callback();
+    });
+  };
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $articleContent = $('.m-post, .m-page').find('.m-article-content'), $this;
+    $articleContent.children('.highlight').each(function() {
+      $this = $(this);
+      $this.attr('data-lang', $this.find('code').attr('data-lang'));
+    });
+
+    $articleContent.children('h1, h2, h3, h4, h5, h6').each(function() {
+      $this = $(this);
+      $this.append($('<a class="anchor" aria-hidden="true"></a>').html('<svg fill="#000000" width="16px" height="16px" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg>'));
+    });
+    $articleContent.on('click', '.anchor', function() {
+      window.scrollTopAnchor('#' + $(this).parent().attr('id'));
+    });
+  });
+})();(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window), $document = $(window.document), $root;
+    var rootTop, rootLeft, rootHeight, scrollBottom, rootBottomTop, lastScrollTop;
+    var offsetBottom = 0, disabled = false, hasInit = false;
+
+    function setOptions(options) {
+      var _options = options || {};
+      _options.offsetBottom && (offsetBottom = _options.offsetBottom);
+      _options.disabled !== undefined && (disabled = _options.disabled);
+      calc(true);
+    }
+    function initData() {
+      top();
+      var rootOffset = $root.offset();
+      rootHeight = $root.outerHeight();
+      rootTop = rootOffset.top;
+      rootLeft = rootOffset.left;
+    }
+    function calc(needInitData) {
+      needInitData && initData();
+      scrollBottom = $document.outerHeight() - offsetBottom - rootHeight;
+      rootBottomTop = scrollBottom - rootTop;
+    }
+    function top() {
+      $root.removeClass('fixed').css({
+        left: 0,
+        top: 0
+      });
+    }
+    function fixed() {
+      $root.addClass('fixed').css({
+        left: rootLeft + 'px',
+        top: 0
+      });
+    }
+    function bottom() {
+      $root.removeClass('fixed').css({
+        left: 0,
+        top: rootBottomTop + 'px'
+      });
+    }
+    function setState(force) {
+      force !== true && (force = false);
+      var scrollTop = $window.scrollTop();
+      if (scrollTop >= rootTop && scrollTop <= scrollBottom) {
+        (!force && lastScrollTop >= rootTop && lastScrollTop <= scrollBottom) || fixed();
+      } else if (scrollTop < rootTop) {
+        (!force && lastScrollTop < rootTop) || top();
+      } else {
+        (!force && lastScrollTop > scrollBottom) || bottom();
+      }
+      lastScrollTop = scrollTop;
+    }
+    function init() {
+      if(!hasInit) {
+        var interval, timeout;
+        calc(true); setState();
+        // run calc every 1.5 seconds
+        interval = setInterval(function() {
+          calc();
+        }, 1500);
+        timeout = setTimeout(function() {
+          clearInterval(interval);
+        }, 50000);
+        window.pageLoad.then(function() {
+          clearInterval(interval);
+          clearTimeout(timeout);
+        });
+        $window.on('scroll', function() {
+          disabled || setState();
+        });
+        $window.on('resize', window.throttle(function() {
+          disabled || (calc(true), setState(true));
+        }, 100));
+        hasInit = true;
+      }
+    }
+
+    function affix(options) {
+      $root = this;
+      setOptions(options);
+      if (!disabled) {
+        init();
+      }
+      $window.on('resize', window.throttle(function() {
+        init();
+      }, 200));
+      return {
+        setOptions: setOptions
+      };
+    }
+    $.fn.affix = affix;
+  });
+})();(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window), $root, $tocUl = $('<ul></ul>'), $tocLi, $headings, $activeLast, $activeCur;
+    var selectors = 'h1,h2,h3', container = 'body', disabled = false;
+    var headingsPos, scrolling = false, rendered = false, hasInit = false;
+    function setOptions(options) {
+      var _options = options || {};
+      _options.selectors && (selectors = _options.selectors);
+      _options.container && (container = _options.container);
+      _options.disabled !== undefined && (disabled = _options.disabled);
+      $headings = $(container).find(selectors);
+      calc();
+    }
+    function calc() {
+      headingsPos = [];
+      $headings.each(function() {
+        headingsPos.push(Math.floor($(this).offset().top));
+      });
+    }
+    function setState(element, disabled) {
+      var scrollTop = $window.scrollTop(), i;
+      if (disabled || !headingsPos || headingsPos.length < 1) { return; }
+      if (element) {
+        $activeCur = element;
+      } else {
+        for (i = 0; i < headingsPos.length; i++) {
+          if (scrollTop >= headingsPos[i]) {
+            $activeCur = $tocLi.eq(i);
+          } else {
+            $activeCur || ($activeCur = $tocLi.eq(i));
+            break;
+          }
+        }
+      }
+      $activeLast && $activeLast.removeClass('toc-active');
+      ($activeLast = $activeCur).addClass('toc-active');
+    }
+    function render() {
+      if(!rendered) {
+        $root.append($tocUl);
+        $headings.each(function() {
+          var $this = $(this);
+          $tocUl.append($('<li></li>').addClass('toc-' + $this.prop('tagName').toLowerCase())
+            .append($('<a></a>').text($this.text()).attr('href', '#' + $this.prop('id'))));
+        });
+        $tocLi = $tocUl.children('li');
+        $tocUl.on('click', 'a', function(e) {
+          e.preventDefault();
+          var $this = $(this);
+          scrolling = true;
+          setState($this.parent());
+          window.scrollTopAnchor($this.attr('href'), function() {
+            scrolling = false;
+          });
+        });
+      }
+      rendered = true;
+    }
+    function init() {
+      var interval, timeout;
+      if(!hasInit) {
+        render(); calc(); setState(null, scrolling);
+        // run calc every 1.5 seconds
+        interval = setInterval(function() {
+          calc();
+        }, 1500);
+        timeout = setTimeout(function() {
+          clearInterval(interval);
+        }, 50000);
+        window.pageLoad.then(function() {
+          clearInterval(interval);
+          clearTimeout(timeout);
+        });
+        $window.on('scroll', function() {
+          disabled || setState(null, scrolling);
+        });
+        $window.on('resize', window.throttle(function() {
+          if (!disabled) {
+            render(); calc(); setState(null, scrolling);
+          }
+        }, 100));
+      }
+      hasInit = true;
+    }
+    function toc(options) {
+      $root = this;
+      setOptions(options);
+      if (!disabled) {
+        init();
+      }
+      $window.on('resize', window.throttle(function() {
+        init();
+      }, 200));
+      return {
+        setOptions: setOptions
+      };
+    }
+    toc.setOptions = setOptions;
+    $.fn.toc = toc;
+  });
+})();(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  var TOC_SELECTOR = window.TEXT_VARIABLES.site.toc.selectors;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window);
+    var $pageStage = $('.js-page-stage');
+    var $pageFooter = $('.js-page-footer');
+    var $articleContent = $('.js-article-content');
+    var $articleAside = $('.js-article-aside');
+    var $toc = $('.js-toc');
+    var $col2 = $('.js-col-2');
+    var toc, affix;
+    var hasToc = $articleContent.find(TOC_SELECTOR).length > 0;
+    var tocDisabled = false;
+
+    function disabled() {
+      return $col2.css('display') === 'none' || !hasToc;
+    }
+
+    $window.on('resize', window.throttle(function() {
+      tocDisabled = disabled();
+      toc && toc.setOptions({
+        disabled: tocDisabled
+      });
+      affix && affix.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+    if (hasToc) {
+      !$pageStage.hasClass('has-toc') && $pageStage.addClass('has-toc');
+    }
+    tocDisabled = disabled();
+
+    setTimeout(function() {
+      toc = $toc.toc({
+        selectors: TOC_SELECTOR,
+        container: $articleContent,
+        disabled: tocDisabled
+      });
+      affix = $articleAside.affix({
+        offsetBottom: $pageFooter.outerHeight(),
+        disabled: tocDisabled
+      });
+    }, 1000);
+  });
+})();</script></body>
+</html>

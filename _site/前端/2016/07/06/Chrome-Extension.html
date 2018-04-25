@@ -1,0 +1,731 @@
+<!DOCTYPE html><html lang="zh">
+  <head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"><title>小觑Chrome Extension - imiem's blog</title>
+<meta name="description" content="  为何不看看官方文档？  我要做什么？  文件组成          基本文件组成      manifest.json      popup.html      popup.js      icon.png        如何查看效果？  问题总结最近一朋友问了一个关于Chrome Extension的问题，...">
+<link rel="canonical" href="http://localhost:4000/%E5%89%8D%E7%AB%AF/2016/07/06/Chrome-Extension.html"><link rel="alternate" type="application/rss+xml" title="imiem's blog" href="http://localhost:4000/feed.xml">
+<!-- for Safari on iOS https://developer.apple.com/ios/human-interface-guidelines/icons-and-images/app-icon/ --><link rel="apple-touch-icon" sizes="180x180" href="/assets/images/logo/icon-180x180.png"><link rel="apple-touch-icon" sizes="167x167" href="/assets/images/logo/icon-167x167.png"><link rel="apple-touch-icon" sizes="152x152" href="/assets/images/logo/icon-152x152.png"><link rel="apple-touch-icon" sizes="120x120" href="/assets/images/logo/icon-120x120.png"><link rel="shortcut icon" href="/assets/images/logo/icon-120x120.png">
+<!-- for Chrome on Android https://developer.chrome.com/multidevice/android/installtohomescreen -->
+<meta name="mobile-web-app-capable" content="yes"><link rel="icon" sizes="192x192" href="/assets/images/logo/icon-192x192.png">
+<!-- for Edge on Windows 10 https://msdn.microsoft.com/en-us/library/dn255024(v=vs.85).aspx --><meta name="msapplication-TileImage" content="/assets/images/logo/icon-144x144.png"><meta name="msapplication-square310x310logo" content="/assets/images/logo/icon-310x310.png"><meta name="msapplication-wide310x150logo" content="/assets/images/logo/icon-310x150.png"><meta name="msapplication-square150x150logo" content="/assets/images/logo/icon-150x150.png"><meta name="msapplication-square70x70logo" content="/assets/images/logo/icon-70x70.png">
+<meta name="msapplication-TileColor" content="#eeeeee">
+<link rel="stylesheet" href="/assets/css/blog.css">
+    <script>(function() {
+  var Set = (function() {
+    var add = function(item) {
+      var i, data = this._data;
+      for (i = 0; i < data.length; i++) {
+        if (data[i] === item) {
+          return;
+        }
+      }
+      this.size ++;
+      data.push(item);
+      return data;
+    };
+
+    var Set = function(data) {
+      this.size = 0;
+      this._data = [];
+      var i;
+      if (data.length > 0) {
+        for (i = 0; i < data.length; i++) {
+          add.call(this, data[i]);
+        }
+      }
+    };
+    Set.prototype.add = add;
+    Set.prototype.get = function(index) { return this._data[index]; };
+    Set.prototype.has = function(item) {
+      var i, data = this._data;
+      for (i = 0; i < data.length; i++) {
+        if (this.get(i) === item) {
+          return true;
+        }
+      }
+      return false;
+    };
+    Set.prototype.is = function(map) {
+      if (map._data.length !== this._data.length) { return false; }
+      var i, j, flag, tData = this._data, mData = map._data;
+      for (i = 0; i < tData.length; i++) {
+        for (flag = false, j = 0; j < mData.length; j++) {
+          if (tData[i] === mData[j]) {
+            flag = true;
+            break;
+          }
+        }
+        if (!flag) { return false; }
+      }
+      return true;
+    };
+    Set.prototype.values = function() {
+      return this._data;
+    };
+    return Set;
+  })();
+  window.isArray = function(val) {
+    return Object.prototype.toString.call(val) === '[object Array]';
+  };
+  window.isString = function(val) {
+    return typeof val === 'string';
+  };
+  window.Lazyload = (function(doc) {
+    var queue = {js: [], css: []}, sources = {js: {}, css: {}}, context = this;
+    var createNode = function(name, attrs) {
+      var node = doc.createElement(name), attr;
+      for (attr in attrs) {
+        if (attrs.hasOwnProperty(attr)) {
+          node.setAttribute(attr, attrs[attr]);
+        }
+      }
+      return node;
+    };
+    var end = function(type, url) {
+      var s, q, qi, cbs, i, j, cur, val, flag;
+      if (type === 'js' || type ==='css') {
+        s = sources[type], q = queue[type];
+        s[url] = true;
+        for (i = 0; i < q.length; i++) {
+          cur = q[i];
+          if (cur.urls.has(url)) {
+            qi = cur, val = qi.urls.values();
+            qi && (cbs = qi.callbacks);
+            for (flag = true, j = 0; j < val.length; j++) {
+              cur = val[j];
+              if (!s[cur]) {
+                flag = false;
+              }
+            }
+            if (flag && cbs && cbs.length > 0) {
+              for (j = 0; j < cbs.length; j++) {
+                cbs[j].call(context);
+              }
+              qi.load = true;
+            }
+          }
+        }
+      }
+    };
+    var load = function(type, urls, callback) {
+      var s, q, qi, node, i, cur,
+        _urls = typeof urls === 'string' ? new Set([urls]) : new Set(urls), val, url;
+      if (type === 'js' || type ==='css') {
+        s = sources[type], q = queue[type];
+        for (i = 0; i < q.length; i++) {
+          cur = q[i];
+          if (_urls.is(cur.urls)) {
+            qi = cur;
+            break;
+          }
+        }
+        val = _urls.values();
+        if (qi) {
+          callback && (qi.load || qi.callbacks.push(callback));
+          callback && (qi.load && callback());
+        } else {
+          q.push({
+            urls: _urls,
+            callbacks: callback ? [callback] : [],
+            load: false
+          });
+          for (i = 0; i < val.length; i++) {
+            node = null, url = val[i];
+            if (s[url] === undefined) {
+              (type === 'js' ) && (node = createNode('script', { src: url }));
+              (type === 'css') && (node = createNode('link', { rel: 'stylesheet', href: url }));
+              if (node) {
+                node.onload = (function(type, url) {
+                  return function() {
+                    end(type, url);
+                  };
+                })(type, url);
+                (doc.head || doc.body).appendChild(node);
+                s[url] = false;
+              }
+            }
+          }
+        }
+      }
+    };
+    return {
+      js: function(url, callback) {
+        load('js', url, callback);
+      },
+      css: function(url, callback) {
+        load('css', url, callback);
+      }
+    };
+  })(this.document);
+
+  window.throttle = function(func, wait) {
+    var args, result, thisArg, timeoutId, lastCalled = 0;
+
+    function trailingCall() {
+      lastCalled = new Date;
+      timeoutId = null;
+      result = func.apply(thisArg, args);
+    }
+    return function() {
+      var now = new Date,
+        remaining = wait - (now - lastCalled);
+
+      args = arguments;
+      thisArg = this;
+
+      if (remaining <= 0) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+        lastCalled = now;
+        result = func.apply(thisArg, args);
+      } else if (!timeoutId) {
+        timeoutId = setTimeout(trailingCall, remaining);
+      }
+      return result;
+    };
+  };
+
+  window.decodeUrl = function(str) {
+    return str ? decodeURIComponent(str.replace(/\+/g, '%20')) : '';
+  };
+
+  window.hasEvent = function(event) {
+    return 'on'.concat(event) in window.document;
+  };
+
+  window.pageLoad = (function () {
+    var loaded = false, cbs = [];
+    window.addEventListener('load', function () {
+      var i, cb; loaded = true;
+      if (cbs.length > 0) {
+        for (i = 0; i < cbs.length; i++) {
+          cb = cbs[i]; cb();
+        }
+      }
+    });
+    return {
+      then: function(cb) {
+        cb && (loaded ? cb() : (cbs.push(cb)));
+      }
+    };
+  })();
+})();</script>
+  </head>
+  <body>
+    <div class="m-page-stage js-page-stage">
+      <div class="m-page-content"><header class="m-page-header">
+  <div class="main clearfix">
+    <div class='site-logo'><svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 width="24px" height="24px" viewBox="0 0 24 24">
+<style type="text/css">
+	.st0{fill:#666666;}
+</style>
+<path class="st0" d="M1.7,22.3c5.7-5.7,11.3-5.7,17,0c3.3-3.3,3.5-5.3,0.8-6c2.7,0.7,3.5-1.1,2.3-5.6s-3.3-5.2-6.3-2.1
+	c3-3,2.3-5.2-2.1-6.3S7,1.8,7.7,4.6C7,1.8,5,2.1,1.7,5.3C7.3,11,7.3,16.7,1.7,22.3"/>
+</svg><a title="imiem's blog
+" href="/">imiem's blog</a></div>
+    <nav>
+      <ul><li><a href="/">主页</a></li><li><a href="/all.html">归档</a></li><li><a href="/about.html">关于</a></li><li><a type="application/rss+xml" href="/feed.xml">RSS</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+<div class="m-page-main"><div class="m-post">
+	<div class="main clearfix js-main">
+		<div class="col-2 js-col-2">
+			<aside class="js-article-aside"><div class="m-toc js-toc"></div></aside>
+		</div>
+		<div class="col-1">
+			<article class="js-article" itemscope itemtype="http://schema.org/BlogPosting">
+				<meta itemprop="mainEntityOfPage" itemscope itemType="https://schema.org/WebPage"/>
+				<header class="main-header"><h1 itemprop="headline" itemprop="name headline">小觑Chrome Extension</h1><div class="m-article-info clearfix"><meta itemprop="author" itemscope itemtype="https://schema.org/Person"><meta itemprop="name" content="imiem"/></meta><ul class="tag-wrapper"><li>
+          <a class="pill-button" href="/all.html?tag=Chrome">Chrome</a>
+        </li><li>
+          <a class="pill-button" href="/all.html?tag=Extension">Extension</a>
+        </li></ul><div class="other-wrapper"><div class="date-wrapper"><time class="article-meta" datetime="2016-07-06T22:06:05+08:00"
+          itemprop="datePublished">2016年 07月06日
+        </time></div>
+  </div>
+</div>
+</header>
+				<div class="m-article-content js-article-content" itemprop="articleBody"><ul id="markdown-toc">
+  <li><a href="#为何不看看官方文档" id="markdown-toc-为何不看看官方文档">为何不看看官方文档？</a></li>
+  <li><a href="#我要做什么" id="markdown-toc-我要做什么">我要做什么？</a></li>
+  <li><a href="#文件组成" id="markdown-toc-文件组成">文件组成</a>    <ul>
+      <li><a href="#基本文件组成" id="markdown-toc-基本文件组成">基本文件组成</a></li>
+      <li><a href="#manifestjson" id="markdown-toc-manifestjson">manifest.json</a></li>
+      <li><a href="#popuphtml" id="markdown-toc-popuphtml">popup.html</a></li>
+      <li><a href="#popupjs" id="markdown-toc-popupjs">popup.js</a></li>
+      <li><a href="#iconpng" id="markdown-toc-iconpng">icon.png</a></li>
+    </ul>
+  </li>
+  <li><a href="#如何查看效果" id="markdown-toc-如何查看效果">如何查看效果？</a></li>
+  <li><a href="#问题总结" id="markdown-toc-问题总结">问题总结</a></li>
+</ul>
+
+<p>最近一朋友问了一个关于Chrome Extension的问题，因为之前从来没有接触过，然后就自己看着文档动手写了一个简单的示例。Chrome Extension除了官方的一个API接口外，其他的就是一些html，css，js的知识了，如果很熟悉这些，写一个简单的自己的插件还是可以的。这里只是做了一个最简单的功能，毕竟我的前端功底不是太好，如果想有更加深入的了解，强烈建议读下<a href="https://developer.chrome.com/extensions/getstarted">Chrome的官方文档</a>。</p>
+
+<h2 id="为何不看看官方文档">为何不看看官方文档？</h2>
+<p>　　<a href="https://developer.chrome.com/extensions/getstarted">Chrome的官方文档</a>做的相当的赞。如果有梯子并且能看懂一点英文的话，下边的就没必要看了。</p>
+
+<h2 id="我要做什么">我要做什么？</h2>
+<p>　　实现的<a href="https://github.com/MrDebuger/CommonCode/tree/master/js/ChromeExtensionDemo">代码可以点击查看</a>。如果没有一个自己想要的最终效果，那么做东西就会相当的没有动力。我要做的很简单，就是输入一个图片的url，然后点击加载，会在弹出的页面上加载出一张图片。最终实现的效果如下图所示：
+<a href="/"><img src="/images/Chrome-Extension-1.png" alt="" style="width: 100%px;" /></a></p>
+
+<h2 id="文件组成">文件组成</h2>
+
+<h3 id="基本文件组成">基本文件组成</h3>
+
+<table boder="1px" cellspacing="0px" style="width:100%">
+	<tr>
+		<td>文件名</td>
+		<td>作用</td>
+	</tr>
+  <tr>
+		<td>manifest.json</td>
+		<td>一些配置选项</td>
+	</tr>
+  <tr>
+		<td>icon.png</td>
+		<td>插件的图标，官方给出的是19px * 19px</td>
+	</tr>
+  <tr>
+		<td>popup.html</td>
+		<td>弹出的主页面</td>
+	</tr>
+  <tr>
+		<td>popup.js</td>
+		<td>外部js</td>
+	</tr>
+  </table>
+
+<h3 id="manifestjson">manifest.json</h3>
+<ul>
+  <li>manifest_version:指定文件格式的版本，目前的默认为2就可以了。</li>
+  <li>下边的其他的参数配置应该就很容易明白了，当然还有一些其他的配置参数，可以根据自己的需要自行配置。</li>
+</ul>
+
+<div class="language-json highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">{</span><span class="w">
+  </span><span class="s2">"manifest_version"</span><span class="p">:</span><span class="mi">2</span><span class="p">,</span><span class="w">
+
+  </span><span class="s2">"name"</span><span class="p">:</span><span class="s2">"ChromeExtensionDemo"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"description"</span><span class="p">:</span><span class="s2">"My First Chrome Extension"</span><span class="p">,</span><span class="w">
+  </span><span class="s2">"version"</span><span class="p">:</span><span class="s2">"1.0"</span><span class="p">,</span><span class="w">
+
+  </span><span class="s2">"browser_action"</span><span class="p">:{</span><span class="w">
+    </span><span class="s2">"default_icon"</span><span class="p">:</span><span class="s2">"icon.png"</span><span class="p">,</span><span class="w">
+    </span><span class="s2">"default_popup"</span><span class="p">:</span><span class="s2">"popup.html"</span><span class="w">
+  </span><span class="p">}</span><span class="w">
+</span><span class="p">}</span><span class="w">
+</span></code></pre></div></div>
+
+<h3 id="popuphtml">popup.html</h3>
+<ul>
+  <li>主页面，即点击弹出按钮后弹出的页面，这是一个标准的html页面，<strong>其中不能包含内联事件，所有的js代码最好写在外边</strong>。</li>
+</ul>
+
+<div class="language-html highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">&lt;!doctype html&gt;</span>
+<span class="nt">&lt;html&gt;</span>
+  <span class="nt">&lt;head&gt;</span>
+    <span class="nt">&lt;title&gt;</span>My First Chrome Extension<span class="nt">&lt;/title&gt;</span>
+    <span class="nt">&lt;style&gt;</span>
+      <span class="nt">body</span> <span class="p">{</span>
+        <span class="nl">font-family</span><span class="p">:</span> <span class="s1">"Consolas"</span><span class="p">,</span><span class="s1">"Segoe UI"</span><span class="p">,</span> <span class="s1">"Lucida Grande"</span><span class="p">,</span> <span class="n">Tahoma</span><span class="p">,</span> <span class="nb">sans-serif</span><span class="p">;</span>
+        <span class="nl">font-size</span><span class="p">:</span> <span class="m">100%</span><span class="p">;</span>
+        <span class="nl">width</span><span class="p">:</span> <span class="m">300px</span><span class="p">;</span>
+        <span class="nl">height</span><span class="p">:</span> <span class="m">400px</span><span class="p">;</span>
+      <span class="p">}</span>
+      <span class="nf">#status</span> <span class="p">{</span>
+        <span class="nl">white-space</span><span class="p">:</span> <span class="n">pre</span><span class="p">;</span>
+        <span class="nl">text-overflow</span><span class="p">:</span> <span class="n">ellipsis</span><span class="p">;</span>
+        <span class="nl">overflow</span><span class="p">:</span> <span class="nb">hidden</span><span class="p">;</span>
+        <span class="nl">max-width</span><span class="p">:</span> <span class="m">600px</span><span class="p">;</span>
+      <span class="p">}</span>
+    <span class="nt">&lt;/style&gt;</span>
+
+    <span class="nt">&lt;script </span><span class="na">src=</span><span class="s">"popup.js"</span><span class="nt">&gt;&lt;/script&gt;</span>
+  <span class="nt">&lt;/head&gt;</span>
+  <span class="nt">&lt;body&gt;</span>
+    <span class="nt">&lt;div</span> <span class="na">style=</span><span class="s">"margin-top:20px"</span><span class="nt">&gt;</span>
+      <span class="nt">&lt;label</span> <span class="na">style=</span><span class="s">""</span><span class="nt">&gt;</span>Please insert a image url:<span class="nt">&lt;/label&gt;</span>
+      <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">"text"</span> <span class="na">id=</span><span class="s">"imgUrl"</span> <span class="na">name=</span><span class="s">"imgUrl"</span> <span class="na">style=</span><span class="s">"width:100%"</span><span class="nt">/&gt;</span>
+    <span class="nt">&lt;/div&gt;</span>
+
+    <span class="nt">&lt;div&gt;</span>
+      <span class="nt">&lt;button&gt;</span>Load Image!<span class="nt">&lt;/button&gt;</span>
+      <span class="nt">&lt;img</span> <span class="na">id=</span><span class="s">"myImage"</span> <span class="na">src=</span><span class="s">"?"</span> <span class="na">width=</span><span class="s">"300"</span> <span class="na">height=</span><span class="s">"200"</span> <span class="nt">/&gt;</span>
+    <span class="nt">&lt;/div&gt;</span>
+  <span class="nt">&lt;/body&gt;</span>
+<span class="nt">&lt;/html&gt;</span>
+
+</code></pre></div></div>
+
+<h3 id="popupjs">popup.js</h3>
+
+<div class="language-javascript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">function</span> <span class="nx">clickHandler</span><span class="p">(</span><span class="nx">element</span><span class="p">)</span> <span class="p">{</span>
+  <span class="nx">loadImg</span><span class="p">();</span>
+<span class="p">}</span>
+<span class="kd">function</span> <span class="nx">loadImg</span><span class="p">(){</span>
+  <span class="kd">var</span> <span class="nx">imgUrl</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="s2">"imgUrl"</span><span class="p">).</span><span class="nx">value</span><span class="p">;</span>
+  <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="s2">"myImage"</span><span class="p">).</span><span class="nx">src</span> <span class="o">=</span> <span class="nx">imgUrl</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="nb">document</span><span class="p">.</span><span class="nx">addEventListener</span><span class="p">(</span><span class="s1">'DOMContentLoaded'</span><span class="p">,</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+          <span class="nb">document</span><span class="p">.</span><span class="nx">querySelector</span><span class="p">(</span><span class="s1">'button'</span><span class="p">).</span><span class="nx">addEventListener</span><span class="p">(</span><span class="s1">'click'</span><span class="p">,</span> <span class="nx">clickHandler</span><span class="p">);</span>
+        <span class="p">});</span>
+
+</code></pre></div></div>
+
+<h3 id="iconpng">icon.png</h3>
+<p>顾名思义，就是该插件的图标名。</p>
+
+<h2 id="如何查看效果">如何查看效果？</h2>
+
+<p><a href="/"><img src="/images/Chrome-Extension-2.png" alt="" style="width: 100%px;" /></a></p>
+
+<h2 id="问题总结">问题总结</h2>
+<ul>
+  <li>由于Chrome Extension<strong>不执行Inline JavaScript</strong>，这说明同时禁止内嵌的<code class="highlighter-rouge">&lt;script&gt;块和内联事件（例如： &lt;button onclick="..."&gt;）</code>,因此请不要在html中编写js代码。</li>
+  <li>代码一次写成的概率很小，因此如果出现错误可以尝试着进行<a href="https://developer.chrome.com/extensions/tut_debugging">debug</a>一下。</li>
+  <li>出现问题后没必要直接就搜索，有时仔细的看一下错误信息也许会有收获。</li>
+</ul>
+</div>
+				<footer><meta itemprop="dateModified" content="2016-07-06T22:06:05+08:00"><div class="article-license"><div class="m-license" style="display: none;"><div class="clearfix"></div>
+</div></div>
+				</footer>
+			</article>
+			<div class="article-previous-next clearfix"><div class="article-previous"><span>上篇</span><a href="/java/2017/03/06/SpringBoot-Redis-Session.html">springboot redis实现session共享</a></div><div class="article-next"><span>下篇</span><a href="/%E6%9E%B6%E6%9E%84/2016/06/18/Java-Userful-Word.html">Java Tips</a></div></div></div>
+	</div>
+</div></div>
+      </div>
+    </div><div class="m-page-footer js-page-footer">
+  <div class="main">
+    <aside><div class="follow-me"><ul itemscope itemtype="http://schema.org/Person">
+    <meta itemprop="name" content="imiem">
+    <link itemprop="url" href="http://localhost:4000/"></ul></div>
+</aside>
+    <footer class="site-info">
+      <p>© imiem's blog 2018</p>
+      <p>Powered by <a title="Jekyll is a simple, blog-aware, static site generator." href="http://jekyllrb.com/">Jekyll</a></p>
+    </footer>
+  </div>
+</div><script>(function () {
+  var $body = document.body;
+  function classnames(classes) {
+    var i, cur, _classes = '';
+    if (window.isString(classes)) {
+      _classes =  classes;
+    } else if (window.isArray(classes)) {
+      for (i = 0; i < classes.length; i++) {
+        cur = classes[i];
+        if (window.isString(cur)) {
+          _classes = _classes.concat(_classes ? ' ' + cur : cur);
+        }
+      }
+    } else {
+      return '';
+    }
+    return _classes;
+  }
+  function addClass(dom, classname) {
+    dom.setAttribute('class', classnames([dom.getAttribute('class'), classname]));
+  }
+  if (window.hasEvent('touchstart')) {
+    addClass($body, 'is-touch');
+    document.addEventListener('touchstart', function(){}, false);
+  } else {
+    addClass($body, 'not-touch');
+  }
+})();</script><script>
+  (function() {
+    var TEXT_VARIABLES = {
+      sources: {
+        jquery: 'https://cdn.bootcss.com/jquery/3.1.1/jquery.min.js',
+        leancloud_js_sdk: '//cdn1.lncld.net/static/js/3.4.1/av-min.js',
+        chart: 'https://cdn.bootcss.com/Chart.js/2.7.1/Chart.bundle.min.js',
+        gitalk: {
+          js: 'https://cdn.bootcss.com/gitalk/1.2.2/gitalk.min.js',
+          css: 'https://cdn.bootcss.com/gitalk/1.2.2/gitalk.min.css'
+        },
+        mathjax: 'https://cdn.bootcss.com/mathjax/2.7.2/MathJax.js?config=TeX-MML-AM_CHTML',
+        mermaid: 'https://cdn.bootcss.com/mermaid/7.1.2/mermaid.min.js'
+      },
+      site: {
+        toc: {
+          selectors: 'h1,h2,h3'
+        }
+      }
+    };
+    window.TEXT_VARIABLES = TEXT_VARIABLES;
+  })();
+</script><script>(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  function scrollAnimateTo(destination, duration, callback) {
+    var $body = $('html, body'), bodyScrollTop = $body.scrollTop();
+    if(bodyScrollTop === destination) { return; }
+    $body.animate({ scrollTop: destination }, duration, callback);
+  }
+  window.scrollTopAnchor = function(anchor, callback) {
+    scrollAnimateTo($(anchor).offset().top, 400, function() {
+      window.history.replaceState(null, '', window.location.href.split('#')[0] + anchor);
+      callback && callback();
+    });
+  };
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $articleContent = $('.m-post, .m-page').find('.m-article-content'), $this;
+    $articleContent.children('.highlight').each(function() {
+      $this = $(this);
+      $this.attr('data-lang', $this.find('code').attr('data-lang'));
+    });
+
+    $articleContent.children('h1, h2, h3, h4, h5, h6').each(function() {
+      $this = $(this);
+      $this.append($('<a class="anchor" aria-hidden="true"></a>').html('<svg fill="#000000" width="16px" height="16px" viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg"><path d="M4 9h1v1H4c-1.5 0-3-1.69-3-3.5S2.55 3 4 3h4c1.45 0 3 1.69 3 3.5 0 1.41-.91 2.72-2 3.25V8.59c.58-.45 1-1.27 1-2.09C10 5.22 8.98 4 8 4H4c-.98 0-2 1.22-2 2.5S3 9 4 9zm9-3h-1v1h1c1 0 2 1.22 2 2.5S13.98 12 13 12H9c-.98 0-2-1.22-2-2.5 0-.83.42-1.64 1-2.09V6.25c-1.09.53-2 1.84-2 3.25C6 11.31 7.55 13 9 13h4c1.45 0 3-1.69 3-3.5S14.5 6 13 6z"></path></svg>'));
+    });
+    $articleContent.on('click', '.anchor', function() {
+      window.scrollTopAnchor('#' + $(this).parent().attr('id'));
+    });
+  });
+})();(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window), $document = $(window.document), $root;
+    var rootTop, rootLeft, rootHeight, scrollBottom, rootBottomTop, lastScrollTop;
+    var offsetBottom = 0, disabled = false, hasInit = false;
+
+    function setOptions(options) {
+      var _options = options || {};
+      _options.offsetBottom && (offsetBottom = _options.offsetBottom);
+      _options.disabled !== undefined && (disabled = _options.disabled);
+      calc(true);
+    }
+    function initData() {
+      top();
+      var rootOffset = $root.offset();
+      rootHeight = $root.outerHeight();
+      rootTop = rootOffset.top;
+      rootLeft = rootOffset.left;
+    }
+    function calc(needInitData) {
+      needInitData && initData();
+      scrollBottom = $document.outerHeight() - offsetBottom - rootHeight;
+      rootBottomTop = scrollBottom - rootTop;
+    }
+    function top() {
+      $root.removeClass('fixed').css({
+        left: 0,
+        top: 0
+      });
+    }
+    function fixed() {
+      $root.addClass('fixed').css({
+        left: rootLeft + 'px',
+        top: 0
+      });
+    }
+    function bottom() {
+      $root.removeClass('fixed').css({
+        left: 0,
+        top: rootBottomTop + 'px'
+      });
+    }
+    function setState(force) {
+      force !== true && (force = false);
+      var scrollTop = $window.scrollTop();
+      if (scrollTop >= rootTop && scrollTop <= scrollBottom) {
+        (!force && lastScrollTop >= rootTop && lastScrollTop <= scrollBottom) || fixed();
+      } else if (scrollTop < rootTop) {
+        (!force && lastScrollTop < rootTop) || top();
+      } else {
+        (!force && lastScrollTop > scrollBottom) || bottom();
+      }
+      lastScrollTop = scrollTop;
+    }
+    function init() {
+      if(!hasInit) {
+        var interval, timeout;
+        calc(true); setState();
+        // run calc every 1.5 seconds
+        interval = setInterval(function() {
+          calc();
+        }, 1500);
+        timeout = setTimeout(function() {
+          clearInterval(interval);
+        }, 50000);
+        window.pageLoad.then(function() {
+          clearInterval(interval);
+          clearTimeout(timeout);
+        });
+        $window.on('scroll', function() {
+          disabled || setState();
+        });
+        $window.on('resize', window.throttle(function() {
+          disabled || (calc(true), setState(true));
+        }, 100));
+        hasInit = true;
+      }
+    }
+
+    function affix(options) {
+      $root = this;
+      setOptions(options);
+      if (!disabled) {
+        init();
+      }
+      $window.on('resize', window.throttle(function() {
+        init();
+      }, 200));
+      return {
+        setOptions: setOptions
+      };
+    }
+    $.fn.affix = affix;
+  });
+})();(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window), $root, $tocUl = $('<ul></ul>'), $tocLi, $headings, $activeLast, $activeCur;
+    var selectors = 'h1,h2,h3', container = 'body', disabled = false;
+    var headingsPos, scrolling = false, rendered = false, hasInit = false;
+    function setOptions(options) {
+      var _options = options || {};
+      _options.selectors && (selectors = _options.selectors);
+      _options.container && (container = _options.container);
+      _options.disabled !== undefined && (disabled = _options.disabled);
+      $headings = $(container).find(selectors);
+      calc();
+    }
+    function calc() {
+      headingsPos = [];
+      $headings.each(function() {
+        headingsPos.push(Math.floor($(this).offset().top));
+      });
+    }
+    function setState(element, disabled) {
+      var scrollTop = $window.scrollTop(), i;
+      if (disabled || !headingsPos || headingsPos.length < 1) { return; }
+      if (element) {
+        $activeCur = element;
+      } else {
+        for (i = 0; i < headingsPos.length; i++) {
+          if (scrollTop >= headingsPos[i]) {
+            $activeCur = $tocLi.eq(i);
+          } else {
+            $activeCur || ($activeCur = $tocLi.eq(i));
+            break;
+          }
+        }
+      }
+      $activeLast && $activeLast.removeClass('toc-active');
+      ($activeLast = $activeCur).addClass('toc-active');
+    }
+    function render() {
+      if(!rendered) {
+        $root.append($tocUl);
+        $headings.each(function() {
+          var $this = $(this);
+          $tocUl.append($('<li></li>').addClass('toc-' + $this.prop('tagName').toLowerCase())
+            .append($('<a></a>').text($this.text()).attr('href', '#' + $this.prop('id'))));
+        });
+        $tocLi = $tocUl.children('li');
+        $tocUl.on('click', 'a', function(e) {
+          e.preventDefault();
+          var $this = $(this);
+          scrolling = true;
+          setState($this.parent());
+          window.scrollTopAnchor($this.attr('href'), function() {
+            scrolling = false;
+          });
+        });
+      }
+      rendered = true;
+    }
+    function init() {
+      var interval, timeout;
+      if(!hasInit) {
+        render(); calc(); setState(null, scrolling);
+        // run calc every 1.5 seconds
+        interval = setInterval(function() {
+          calc();
+        }, 1500);
+        timeout = setTimeout(function() {
+          clearInterval(interval);
+        }, 50000);
+        window.pageLoad.then(function() {
+          clearInterval(interval);
+          clearTimeout(timeout);
+        });
+        $window.on('scroll', function() {
+          disabled || setState(null, scrolling);
+        });
+        $window.on('resize', window.throttle(function() {
+          if (!disabled) {
+            render(); calc(); setState(null, scrolling);
+          }
+        }, 100));
+      }
+      hasInit = true;
+    }
+    function toc(options) {
+      $root = this;
+      setOptions(options);
+      if (!disabled) {
+        init();
+      }
+      $window.on('resize', window.throttle(function() {
+        init();
+      }, 200));
+      return {
+        setOptions: setOptions
+      };
+    }
+    toc.setOptions = setOptions;
+    $.fn.toc = toc;
+  });
+})();(function() {
+  var SOURCES = window.TEXT_VARIABLES.sources;
+  var TOC_SELECTOR = window.TEXT_VARIABLES.site.toc.selectors;
+  window.Lazyload.js(SOURCES.jquery, function() {
+    var $window = $(window);
+    var $pageStage = $('.js-page-stage');
+    var $pageFooter = $('.js-page-footer');
+    var $articleContent = $('.js-article-content');
+    var $articleAside = $('.js-article-aside');
+    var $toc = $('.js-toc');
+    var $col2 = $('.js-col-2');
+    var toc, affix;
+    var hasToc = $articleContent.find(TOC_SELECTOR).length > 0;
+    var tocDisabled = false;
+
+    function disabled() {
+      return $col2.css('display') === 'none' || !hasToc;
+    }
+
+    $window.on('resize', window.throttle(function() {
+      tocDisabled = disabled();
+      toc && toc.setOptions({
+        disabled: tocDisabled
+      });
+      affix && affix.setOptions({
+        disabled: tocDisabled
+      });
+    }, 100));
+
+    if (hasToc) {
+      !$pageStage.hasClass('has-toc') && $pageStage.addClass('has-toc');
+    }
+    tocDisabled = disabled();
+
+    setTimeout(function() {
+      toc = $toc.toc({
+        selectors: TOC_SELECTOR,
+        container: $articleContent,
+        disabled: tocDisabled
+      });
+      affix = $articleAside.affix({
+        offsetBottom: $pageFooter.outerHeight(),
+        disabled: tocDisabled
+      });
+    }, 1000);
+  });
+})();</script></body>
+</html>

@@ -1,0 +1,15 @@
+<div class="m-license" style="display: none;">
+  {%- assign locale = site.data.locale -%}
+  <div class="clearfix">
+    {%- if site.repository and site.repository_tree -%}
+      {%- assign __path = '/assets/images/octocat.jpg' -%}
+      {%- include snippets/prepend-baseurl.html -%}
+      <a class="octocat" href="https://github.com/{{ site.repository }}/tree/{{ site.repository_tree }}/{{ page.path }}">
+        <img alt="View on Github" src="{{ __return }}" />
+      </a>
+      {%- assign __locale = locale.POST_ON_GITHUB -%}
+      {%- include snippets/locale-to-string.html -%}
+      <p><a href="https://github.com/{{ site.repository }}/tree/{{ site.repository_tree }}/{{ page.path }}">{{ __return }}</a></p>
+    {%- endif -%}
+  </div>
+</div>

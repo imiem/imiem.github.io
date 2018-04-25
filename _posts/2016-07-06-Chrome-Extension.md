@@ -18,7 +18,7 @@ tags: Chrome Extension
 
 ## 我要做什么？
 　　实现的[代码可以点击查看](https://github.com/MrDebuger/CommonCode/tree/master/js/ChromeExtensionDemo)。如果没有一个自己想要的最终效果，那么做东西就会相当的没有动力。我要做的很简单，就是输入一个图片的url，然后点击加载，会在弹出的页面上加载出一张图片。最终实现的效果如下图所示：
-[<img src="{{ site.baseurl }}/images/Chrome-Extension-1.png" alt="" style="width: 100%px;"/>]({{ site.baseurl/images/Chrome-Extension-1.png}}/)
+[<img src="{{ site.baseurl }}images/Chrome-Extension-1.png" alt="" style="width: 100%px;"/>]({{ site.baseurl/images/Chrome-Extension-1.png}}/)
 
 ## 文件组成
 
@@ -128,7 +128,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 ## 如何查看效果？
 
-[<img src="{{ site.baseurl }}/images/Chrome-Extension-2.png" alt="" style="width: 100%px;"/>]({{ site.baseurl/images/Chrome-Extension-2.png}}/)
+[<img src="{{ site.baseurl }}images/Chrome-Extension-2.png" alt="" style="width: 100%px;"/>]({{ site.baseurl/images/Chrome-Extension-2.png}}/)
 
 ## 问题总结
 * 由于Chrome Extension**不执行Inline JavaScript**，这说明同时禁止内嵌的```<script>块和内联事件（例如： <button onclick="...">）```,因此请不要在html中编写js代码。

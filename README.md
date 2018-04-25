@@ -5,10 +5,10 @@
 
 ## 友情链接
 1. [github提供的免费空间](https://github.com) 
-2. [Gaohaoyang的模板](https://github.com/Gaohaoyang/gaohaoyang.github.io)
-3. [我的github](https://github.com/MrDebuger)
+2. [Gaohaoyang的模板](https://github.com/kitian616/jekyll-TeXt-theme)
+3. [我的github](https://github.com/imiem)
 
 ## 联系我
-1. 如果发现文章中不正确的地方，会使用[github和markdown的可以修改后request，文章的源文件在_posts文件夹下](https://github.com/MrDebuger/MrDebuger.github.io)。
+1. 如果发现文章中不正确的地方，会使用[github和markdown的可以修改后request，文章的源文件在_posts文件夹下](https://github.com/MrDebuger/imiem.github.io)。
 2. 不会使用markdown的可以给我发邮件，接收到邮件后会及时回复。技术交流亦可。
 3. [mailjianfeng@163.com](mailto:mailjianfeng@163.com)
