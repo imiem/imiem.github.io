@@ -28,7 +28,7 @@ tags: zookeeper
 #### 释放排他锁
 
 #### 整体流程
-[<img src="{{ site.baseurl }}/images/Chrome-Extension-1.png" alt="" style="width: 100%px;"/>]({{ site.baseurl/images/zookeeper-exclusivve-locks-process.png}}/)
+[<img src="{{ site.baseurl }}/images/zookeeper-exclusivve-locks-process.png" alt="" style="width: 100%px;"/>]({{ site.baseurl/images/zookeeper-exclusivve-locks-process.png}}/)
 
 
 
