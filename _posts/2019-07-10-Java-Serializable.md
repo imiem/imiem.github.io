@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Java 序列化月反序列化"
+title:  "Java 序列化与反序列化"
 date:   2019-07-10 19:06:05
 categories: Java
 tags: Serializable
@@ -11,6 +11,10 @@ tags: Serializable
 
 
 > > >序列化是对象持久化的一种手段，在使用 Java序列化对象是，会将对象保存为一组字节，需要时，再将字节组组装成对象
+
+
+
+
 
 ### Java对象的序列化是什么？
 
