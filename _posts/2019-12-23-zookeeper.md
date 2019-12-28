@@ -563,7 +563,192 @@ tags: ZooKeeper
   ```
 
   **节点的内容或是节点数据版本变化，都被看作节点变化**
+  
+* 更新数据
+
+  ```java
+  package chap5;
+  
+  import java.util.concurrent.CountDownLatch;
+  import org.apache.zookeeper.CreateMode;
+  import org.apache.zookeeper.KeeperException;
+  import org.apache.zookeeper.WatchedEvent;
+  import org.apache.zookeeper.Watcher;
+  import org.apache.zookeeper.Watcher.Event.EventType;
+  import org.apache.zookeeper.Watcher.Event.KeeperState;
+  import org.apache.zookeeper.ZooDefs.Ids;
+  import org.apache.zookeeper.ZooKeeper;
+  import org.apache.zookeeper.data.Stat;
+  
+  public class ZKSetDataSyncUsage implements Watcher {
+  
+      private static CountDownLatch connectedSemaphore = new CountDownLatch(1);
+      private static ZooKeeper zk = null;
+  
+      public static void main(String[] args) throws Exception {
+          zk = new ZooKeeper("192.168.7.30:2181", 5000, new ZKSetDataSyncUsage());
+          connectedSemaphore.await();
+          String path = "/zk-book";
+  
+          zk.create(path, "123".getBytes(), Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
+          zk.getData(path, true, null);
+  
+          Stat stat = zk.setData(path, "456".getBytes(), -1);
+          System.out.println(
+                  "Czxid = " + stat.getCzxid() + " Mzxid = " + stat.getMzxid() + " Version = " + stat.getVersion());
+  
+          Stat stat2 = zk.setData(path, "456".getBytes(), stat.getVersion());
+          System.out.println(
+                  "Czxid = " + stat.getCzxid() + " Mzxid = " + stat.getMzxid() + " Version = " + stat2.getVersion());
+  
+          try {
+              zk.setData(path, "456".getBytes(), stat.getVersion());
+  
+          } catch (KeeperException e) {
+              System.out.println("code = " + e.getCode() + "message = " + e.getMessage());
+          }
+  
+          Thread.sleep(Integer.MAX_VALUE);
+  
+      }
+  
+      public void process(WatchedEvent event) {
+          if (KeeperState.SyncConnected == event.getState()) {
+              if (EventType.None == event.getType() && null == event.getPath()) {
+                  connectedSemaphore.countDown();
+              }
+          }
+      }
+  }
+  
+  ```
+
+  基于 version 参数，可以很好的控制 ZooKeeper 上节点数据的原子性操作。
+
+* 检测节点是否存在
+
+  ```java
+  package chap5;
+  
+  import java.io.IOException;
+  import java.util.concurrent.CountDownLatch;
+  import org.apache.zookeeper.CreateMode;
+  import org.apache.zookeeper.KeeperException;
+  import org.apache.zookeeper.WatchedEvent;
+  import org.apache.zookeeper.Watcher;
+  import org.apache.zookeeper.Watcher.Event.EventType;
+  import org.apache.zookeeper.Watcher.Event.KeeperState;
+  import org.apache.zookeeper.ZooDefs.Ids;
+  import org.apache.zookeeper.ZooKeeper;
+  
+  public class ZKExistSyncUsage implements Watcher {
+  
+      private static final CountDownLatch connectedSemaphore = new CountDownLatch(1);
+      private static ZooKeeper zk;
+  
+      public static void main(String[] args) throws IOException, InterruptedException, KeeperException {
+          String path = "/zk-book";
+          zk = new ZooKeeper("192.168.7.30:2181", 5000, new ZKExistSyncUsage());
+  
+          connectedSemaphore.await();
+  
+          zk.exists(path, true);
+  
+          zk.create(path, "".getBytes(), Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+  
+          zk.setData(path, "123".getBytes(), -1);
+  
+          zk.create(path + "/c1", "".getBytes(), Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+  
+          zk.delete(path + "/c1", -1);
+  
+          zk.delete(path, -1);
+  
+          Thread.sleep(Integer.MAX_VALUE);
+  
+      }
+  
+      public void process(WatchedEvent event) {
+          try {
+              if (event.getState() == KeeperState.SyncConnected) {
+                  if (event.getType() == EventType.None && null == event.getPath()) {
+                      connectedSemaphore.countDown();
+                  } else if (event.getType() == EventType.NodeCreated) {
+                      System.out.println("Node:" + event.getPath() + " Created");
+                      zk.exists(event.getPath(), true);
+                  } else if (event.getType() == EventType.NodeDeleted) {
+                      System.out.println("Node:" + event.getPath() + " Deleted");
+                      zk.exists(event.getPath(), true);
+                  } else if (event.getType() == EventType.NodeDataChanged) {
+                      System.out.println("Node:" + event.getPath() + " DataChanged");
+                      zk.exists(event.getPath(), true);
+                  }
+              }
+          } catch (Exception e) {
+              System.out.println(e);
+          }
+  
+      }
+  }
+  
+  ```
+
+  Node:/zk-book Created
+  Node:/zk-book DataChanged
+  Node:/zk-book Deleted
+
+  * 无论节点是否存在，通过 exists 接口都可以注册 watcher。
+  * exists 接口中注册的 watcher，能过对节点创建、节点删除、节点数据更新进行监听。
+  * 对于指定节点的子节点的各种变化，都不会通知客户端。
+
+* 权限控制
+
+  ```java
+  package chap5;
+  
+  import java.io.IOException;
+  import org.apache.zookeeper.CreateMode;
+  import org.apache.zookeeper.KeeperException;
+  import org.apache.zookeeper.ZooDefs.Ids;
+  import org.apache.zookeeper.ZooKeeper;
+  
+  public class ZKAuthUsage {
+      public static void main(String[] args) throws IOException, KeeperException, InterruptedException {
+          String path = "/zk-book-auth";
+          String path2 = path + "/c1";
+  
+          ZooKeeper zk = new ZooKeeper("192.168.7.30:2181", 5000, new ZKCreateSyncUsage());
+          zk.addAuthInfo("digest", "foo:foo".getBytes());
+          zk.create(path, "123".getBytes(), Ids.CREATOR_ALL_ACL, CreateMode.PERSISTENT);
+          zk.create(path2, "123".getBytes(), Ids.CREATOR_ALL_ACL, CreateMode.EPHEMERAL);
+  
+          ZooKeeper zk2 = new ZooKeeper("192.168.7.30:2181", 5000, new ZKCreateSyncUsage());
+          zk2.addAuthInfo("digest", "foo:foo".getBytes());
+          //        byte[] data = zk2.getData(path, false, null);
+          //        System.out.println(new String(data));
+          zk2.delete(path2, -1);
+  
+          ZooKeeper zk3 = new ZooKeeper("192.168.7.30:2181", 5000, new ZKCreateSyncUsage());
+          zk3.delete(path, -1);
+  
+          Thread.sleep(Integer.MAX_VALUE);
+      }
+  }
+  
+  ```
+
+  当客户端对一个节点添加权限信息后，其作用范围是节点，也就是说当我们对一个数据节点添加权限信息后，依然可以自由删除这个节点。但这个节点的子节点，就必须使用相应的权限信息才能删除。
+
+
+
+
 
   
 
   
+
+  
+
+  
+
+
